@@ -20,7 +20,7 @@ Comparing AeroLens results with each volunteer's known spectacle prescription an
 | V1 | 14 Nov 2026 | 0.00 / −0.50 × 80 | 0.00 / −1.00 × 80 | run 2: 6/9.5 / 6/7.5 · run 3: 6/7.5 / 6/7.5 · run 4: 6/7.5 / 6/9.5 | 6/6+ / 6/6+ | run 2: Even / Even · runs 3–4 (thin lines): 3–9 / 3–9 (axis ≈ 90°) | Yes after dial update; runs 3–4 not blind |
 
 | V2 | 14 Nov 2026 | −0.25 / 0.00 | −0.50 / 0.00 | 6/6+ / 6/7.5 | not run | 4–10 (≈120°) / 2–8 & 3–9 (≈75°) | Acuity plausible; **dial false positive** in both eyes |
-| V3 | 14 Nov 2026 | −3.00 / 0.00 | −3.50 / 0.00 | **pending** | 6/7.5+ / 6/7.5+ (screen limit) | with glasses: Even / Even | With glasses: yes (no cyl, triage ok). Key run without glasses still to do |
+| V3 | 14 Nov 2026 | −3.00 / 0.00 | −3.50 / 0.00 | 6/19 / 6/12 (Tumbling E), triage refer | 6/7.5+ / 6/7.5+ (screen limit) | Even / Even | **Detects the −3 D myopia** (refer, R as predicted). L better than predicted; **duochrome green, not red** |
 
 `6/6+` = 6/6 or better (the screen could not draw a smaller line).
 
@@ -127,7 +127,7 @@ Dial: R line 4–10 (axis ≈ 120°), L lines 2–8 & 3–9 (axis ≈ 75°). Duo
 
 **Prescription (single vision, optometrist test 08 Nov 2024, two years old):** R −3.00 / 0.00 · L −3.50 / 0.00 · PD 33 / 31 mm (64 mm total). Moderate short-sightedness, no astigmatism. The prescription may have changed since 2024.
 
-**Conditions:** a different Android phone (450×1000 CSS px, dpr 1.6), saved card scale 6.33 px/mm, camera tape-calibrated, letter chart, export v7, **with glasses** (glasses question: "Glasses"). Run 2 without glasses not done yet.
+**Conditions:** a different Android phone (450×1000 CSS px, dpr 1.6), saved card scale 6.33 px/mm, camera tape-calibrated, letter chart, export v7, **with glasses** (glasses question: "Glasses"). Run 2 without glasses is below.
 
 | | Right | Left |
 |---|---|---|
@@ -144,3 +144,25 @@ Dial: R line 4–10 (axis ≈ 120°), L lines 2–8 & 3–9 (axis ≈ 75°). Duo
 - **Duochrome green in both eyes, with full distance glasses at 50 cm.** This is expected from accommodative lag (or slight over-minus), not a sign of long-sightedness. It is the third "green" in three volunteers (V2 R, V3 R+L). For backlog item 3: at 50 cm, green is uninformative. Only **red** is meaningful: it means the eye is still more than about 2 D short-sighted at that distance, either uncorrected or under-corrected.
 - **Prediction for the run without glasses (written down before the run):** at 50 cm, a −3.00 D eye has about 1.00 D of blur left (far point 33 cm) and a −3.50 D eye about 1.50 D. Expect the right eye at roughly 6/12–6/19 and the left one about a line worse (6/19–6/24). Expect duochrome **red** in both eyes, the dial even, and triage "advise" or "refer" (refer if the left eye is worse than 6/18 or the eyes differ by two lines). Unlike V1/V2, this volunteer is myopic enough for the 50 cm test to detect (known issue 1: up to about −2 D reads normal).
 - **PD 64 mm (33 / 31)** is reference data for Phase 2.
+
+### Run 2: without glasses (20:14 UTC)
+
+**Conditions:** same phone (450×1000 CSS px, dpr 1.6), saved card scale 6.33 px/mm, camera tape-calibrated, **Tumbling E** chart, export v7, no glasses (`correction: "none"`).
+
+| | Right | Left |
+|---|---|---|
+| Acuity (50 cm) | **6/19** (logMAR 0.5) | **6/12** (logMAR 0.3) |
+| Answers | 0.5: 3/3 · 0.4: 2/5 (fail) | 0.5: 3/3 · 0.4: 4/5 · 0.3: 3/4 · 0.2: 0/3 (two "can't see") |
+| Dial | Even | Even |
+| Duochrome | green | green |
+| Distance median (range) | 501 mm (493–525) | 512 mm (493–549) |
+| Triage | **refer**: both eyes below 6/6, and the eyes differ by two lines | |
+
+### Findings (run 2), checked against the prediction above
+- **The main question is answered: yes.** Without glasses, a −3 D myope is clearly caught at 50 cm: acuity dropped from 6/7.5+ (with glasses) to 6/19 and 6/12, and triage went from "ok" to "refer". This is the evidence that the 50 cm test detects moderate myopia (known issue 1 limits only up to about −2 D).
+- **Right eye matches the prediction** (6/12–6/19 expected, 6/19 measured).
+- **Left eye was better than predicted** (6/19–6/24 expected, 6/12 measured), although its prescription is stronger. Possible reasons: the prescription is two years old and may have changed; squinting (not controlled); a 4-choice E gives 25% guessing per answer. Repeat the left eye with the letter chart, and ask the volunteer not to squint.
+- **Duochrome green in both eyes, where red was predicted.** This is the important miss: an uncorrected −3 D eye at 50 cm should see red clearer. Together with the earlier greens it suggests the phone's duochrome is biased towards green, perhaps because the green half looks brighter on this screen, or because the instruction is misread. Until it is checked, **don't present duochrome as evidence of myopia**: the triage and acuity carried this case, not the duochrome. Follow-up: compare the red and green halves' brightness on the phone, and re-run V3 without glasses, asking "Which side are the letters blacker and sharper on?"
+- **Dial even, as predicted** (no cylinder on the prescription).
+- **Distance gating held:** every answer was given at 493–549 mm (within ±10% of 500 mm).
+- Not blind in the strict sense: the prediction was written down before the run, but the volunteer's prescription was already known.
