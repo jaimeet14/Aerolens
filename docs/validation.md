@@ -12,6 +12,7 @@ Comparing AeroLens results with each volunteer's known spectacle prescription an
 6. **Keep it blind:** collect the prescription *after* the AeroLens runs, and never tell the volunteer which line or score to expect. (V1 run 3 was not blind: the expected 3 o'clock line had been mentioned beforehand.)
 7. **Dial control (head tilt):** if a darker line is reported, ask the volunteer to tilt their head 90° (ear to shoulder). Real astigmatism turns with the eye, so the darker line should move to the perpendicular line (e.g. 3–9 → 12–6). If it doesn't move, record it as suggestion or a screen artefact.
 8. **Landolt C needs its own volunteer comparison** (chart `'C'`, from export v12; automatic after a Hindi interview). Every run below used the letter chart (or the E on a laptop), so none of it validates the C: compare C runs with a printed Landolt C or Snellen chart on their own volunteers before trusting C results like the letter chart's.
+9. **Turn off night mode / blue-light filter** (Night Light, Eye Comfort, Reading mode, etc.) during the tests. These filters dim the green and blue light, so the duochrome's red and green halves are no longer equally bright.
 
 ## Summary
 
@@ -163,6 +164,7 @@ Dial: R line 4–10 (axis ≈ 120°), L lines 2–8 & 3–9 (axis ≈ 75°). Duo
 - **Right eye matches the prediction** (6/12–6/19 expected, 6/19 measured).
 - **Left eye was better than predicted** (6/19–6/24 expected, 6/12 measured), although its prescription is stronger. Possible reasons: the prescription is two years old and may have changed; squinting (not controlled); a 4-choice E gives 25% guessing per answer. Repeat the left eye with the letter chart, and ask the volunteer not to squint.
 - **Duochrome green in both eyes, where red was predicted.** This is the important miss: an uncorrected −3 D eye at 50 cm should see red clearer. Together with the earlier greens it suggests the phone's duochrome is biased towards green, perhaps because the green half looks brighter on this screen, or because the instruction is misread. Until it is checked, **don't present duochrome as evidence of myopia**: the triage and acuity carried this case, not the duochrome. Follow-up: compare the red and green halves' brightness on the phone, and re-run V3 without glasses, asking "Which side are the letters blacker and sharper on?"
+- **Fixed 15 Nov 2026:** the halves were not luminance-matched (red 0.233 vs green 0.444, so 5.7:1 vs 9.9:1 contrast for the black E's). They now match (0.213 each). All duochrome answers before this fix (V1–V3) are unreliable. Re-run V3 without glasses to check red.
 - **Dial even, as predicted** (no cylinder on the prescription).
 - **Distance gating held:** every answer was given at 493–549 mm (within ±10% of 500 mm).
 - Not blind in the strict sense: the prediction was written down before the run, but the volunteer's prescription was already known.

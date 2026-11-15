@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import type { Iris } from '../hooks/useIrisDistance';
 import { answer, initAcuity, LINES, nextDir, PER_LINE, screenLimit, SNELLEN } from '../lib/acuity';
 import { dialLineWidthMm, lineLabelIn, lineOfHour, pickedAnswer, toggleLine } from '../lib/dial';
+import { DUO_GREEN_CSS, DUO_INK_CSS, DUO_RED_CSS } from '../lib/duochrome';
 import { ACUITY, COVER, DIAL, DIR_TEXT, DUO, EYE, fmt, type Lang } from '../lib/i18n';
 import { landoltDiameterMm } from '../lib/landolt';
 import { optotypeHeightMm } from '../lib/optics';
@@ -268,8 +269,7 @@ export function AstigmatismTest({ lang, eye, iris, geo, acuity, onDone }: {
 }
 
 /* ---------- Duochrome (red-green) ---------- */
-const RED = 'rgb(255,45,45)';
-const GREEN = 'rgb(0,205,90)';
+// Luminance-matched halves and black ink from lib/duochrome.ts, so the halves differ in colour only (not brightness).
 const DUO_DIRS: Dir[] = ['right', 'up', 'left'];
 export function DuochromeTest({ lang, eye, iris, geo, acuity, onDone }: {
   lang: Lang; eye: Eye; iris: Iris; geo: Geometry; acuity: number | null; onDone: (r: Duochrome) => void;
@@ -279,19 +279,19 @@ export function DuochromeTest({ lang, eye, iris, geo, acuity, onDone }: {
   const sizeCss = optotypeHeightMm(LINES[idx], geo.targetMm) * geo.pxPerMm;
   const panel = (bg: string) => (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 py-6" style={{ background: bg }}>
-      {DUO_DIRS.map((d, i) => <TumblingE key={i} dir={d} sizeCss={sizeCss} label={fmt(ACUITY.eLabel[lang], { dir: DIR_TEXT[d][lang] })} />)}
+      {DUO_DIRS.map((d, i) => <TumblingE key={i} dir={d} sizeCss={sizeCss} color={DUO_INK_CSS} label={fmt(ACUITY.eLabel[lang], { dir: DIR_TEXT[d][lang] })} />)}
     </div>
   );
   return (
     <div>
       <p className="mb-2 text-center text-sm text-muted">{EYE[eye][lang]} · {fmt(DUO.header[lang], { size: SNELLEN[idx] })}</p>
       <DistanceGuard lang={lang} iris={iris} targetMm={geo.targetMm}>
-        <div className="flex overflow-hidden rounded-2xl">{panel(RED)}{panel(GREEN)}</div>
+        <div className="flex overflow-hidden rounded-2xl">{panel(DUO_RED_CSS)}{panel(DUO_GREEN_CSS)}</div>
         <p className="mt-4 text-center">{DUO.ask[lang]}</p>
         <div className="mt-3 grid grid-cols-3 gap-2">
-          <button className="btn text-sm font-semibold" style={{ background: RED, color: '#000' }} onClick={() => onDone('red')}>{DUO.red[lang]}</button>
+          <button className="btn text-sm font-semibold" style={{ background: DUO_RED_CSS, color: DUO_INK_CSS }} onClick={() => onDone('red')}>{DUO.red[lang]}</button>
           <button className="btn btn-ghost text-sm" onClick={() => onDone('equal')}>{DUO.same[lang]}</button>
-          <button className="btn text-sm font-semibold" style={{ background: GREEN, color: '#000' }} onClick={() => onDone('green')}>{DUO.green[lang]}</button>
+          <button className="btn text-sm font-semibold" style={{ background: DUO_GREEN_CSS, color: DUO_INK_CSS }} onClick={() => onDone('green')}>{DUO.green[lang]}</button>
         </div>
       </DistanceGuard>
     </div>
