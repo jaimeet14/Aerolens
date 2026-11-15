@@ -1,0 +1,146 @@
+# AeroLens validation log (Phase 4)
+
+Comparing AeroLens results with each volunteer's known spectacle prescription and, where possible, a printed Snellen chart.
+**Anonymised:** volunteers are numbered; no names, photos or contact details are kept here.
+
+## Protocol
+1. Record the volunteer's current prescription (SPH / CYL / AXIS / PD) from their spectacle card or optometrist slip.
+2. Run AeroLens on a phone (not a laptop: coarse screens stop at about 6/9.5 at 50 cm), screen brightness at maximum.
+3. The app always tests **without** glasses (from export v8). Answer the usual-wear question ("Do you usually wear glasses or contact lenses?") honestly, and take glasses off when the app asks. Contact lens wearers take them out if they can ("I've taken them out"). A with-glasses run is no longer part of the protocol. In v8 exports `correction` is the usual wear and `testedWith` is what the test was done with; in v7 and earlier exports `correction` meant what was worn during the test (the with-glasses runs below are from then).
+4. Copy the result JSON from the results screen for each run and add it under the volunteer.
+5. Where possible, also read a printed Snellen chart at 6 m and a near card at 40 cm, each eye, with and without glasses.
+6. **Keep it blind:** collect the prescription *after* the AeroLens runs, and never tell the volunteer which line or score to expect. (V1 run 3 was not blind: the expected 3 o'clock line had been mentioned beforehand.)
+7. **Dial control (head tilt):** if a darker line is reported, ask the volunteer to tilt their head 90° (ear to shoulder). Real astigmatism turns with the eye, so the darker line should move to the perpendicular line (e.g. 3–9 → 12–6). If it doesn't move, record it as suggestion or a screen artefact.
+8. **Landolt C needs its own volunteer comparison** (chart `'C'`, from export v12; automatic after a Hindi interview). Every run below used the letter chart (or the E on a laptop), so none of it validates the C: compare C runs with a printed Landolt C or Snellen chart on their own volunteers before trusting C results like the letter chart's.
+
+## Summary
+
+| # | Date | Rx R (SPH/CYL×AXIS) | Rx L | AeroLens without glasses (R / L) | AeroLens with glasses (R / L) | Dial without glasses (R / L) | Agrees? |
+|---|---|---|---|---|---|---|---|
+| V1 | 14 Nov 2026 | 0.00 / −0.50 × 80 | 0.00 / −1.00 × 80 | run 2: 6/9.5 / 6/7.5 · run 3: 6/7.5 / 6/7.5 · run 4: 6/7.5 / 6/9.5 | 6/6+ / 6/6+ | run 2: Even / Even · runs 3–4 (thin lines): 3–9 / 3–9 (axis ≈ 90°) | Yes after dial update; runs 3–4 not blind |
+
+| V2 | 14 Nov 2026 | −0.25 / 0.00 | −0.50 / 0.00 | 6/6+ / 6/7.5 | not run | 4–10 (≈120°) / 2–8 & 3–9 (≈75°) | Acuity plausible; **dial false positive** in both eyes |
+| V3 | 14 Nov 2026 | −3.00 / 0.00 | −3.50 / 0.00 | **pending** | 6/7.5+ / 6/7.5+ (screen limit) | with glasses: Even / Even | With glasses: yes (no cyl, triage ok). Key run without glasses still to do |
+
+`6/6+` = 6/6 or better (the screen could not draw a smaller line).
+
+---
+
+## V1 — 14 Nov 2026
+
+**Prescription (single vision):** R 0.00 / −0.50 × 80 · L 0.00 / −1.00 × 80 · PD 31.5 / 31 mm (62.5 mm total). Pure astigmatism, no sphere. Spherical equivalent R −0.25 D, L −0.50 D.
+
+**Conditions:** Android phone, screen 360×800 CSS px, dpr 2. Card scale 5.42 px/mm (card step on run 1, reused from the saved calibration on run 2). Camera not tape-calibrated (`focalCalibrated: false`). Letter chart (Sloan). AeroLens export version 4.
+
+### Run 1: with glasses (14:17 UTC)
+| Line | Right | Left |
+|---|---|---|
+| 6/19 to 6/7.5 | 15/15 correct | 15/15 correct |
+| 6/6 | R✓ D✓ C→O ✗ R→can't see ✗ N✓ = pass | O✓ N✓ O✓ = pass |
+| 6/4.8 | not drawable (screen limit) | not drawable |
+| **Result** | **6/6 or better** | **6/6 or better** |
+
+Dial: even both eyes. Duochrome: equal both eyes. Distance median R 497 mm, L 504 mm (range 477–523). Triage: no concern.
+
+### Run 2: without glasses (14:20 UTC)
+| Line | Right | Left |
+|---|---|---|
+| 6/19 to 6/12 | 9/9 correct | 9/9 correct |
+| 6/9.5 | 3/3 correct = pass | Z✓ D→R ✗ V→R ✗ Z✓ S✓ = pass (3/5) |
+| 6/7.5 | O can't see ✗, C can't see ✗, N✓, Z✓, O can't see ✗ = fail | O→D ✗ S✓ H→N ✗ Z✓ S✓ = pass (3/5) |
+| 6/6 | not tested | H, C, V can't see = fail |
+| **Result** | **6/9.5** | **6/7.5** |
+
+Dial: even both eyes. Duochrome: equal both eyes. Distance median R 474 mm (range 462–489, leaned closer without glasses), L 492 mm (479–528). Triage: "A lens recommendation is likely to help".
+
+### Run 3: without glasses, after the 14 Nov update (14:50 UTC)
+Export v5. The thin dial lines are now derived from acuity. The camera **is** tape-calibrated (`focalCalibrated: true`). Saved card scale.
+| Line | Right | Left |
+|---|---|---|
+| 6/19 to 6/9.5 | 12/12 correct | 6/19 & 6/15: 6/6; 6/12: O✓ D✓ H can't see ✗ O✓ = pass; 6/9.5: 3/3 |
+| 6/7.5 | D✓ O✓ D✓ = pass | R✓ V✓ H→R ✗ V✓ = pass |
+| 6/6 | R, C, N can't see = fail | H✓, then S, Z, N can't see = fail |
+| **Result** | **6/7.5** | **6/7.5** |
+
+Dial: **darker line in both eyes**, recorded as 9 o'clock (R) and 3 o'clock (L). These are the two ends of the **same 3–9 (horizontal) line**. By the rule of 30 (lower number × 30), 3 × 30 = **90°**, against a prescribed axis of **80°**. That is within the dial's 30° resolution, so it **matches the prescription**. Duochrome: equal. Distance median R 502 mm (495–516), L 460 mm (452–531, leaning close). Triage: advise (below 6/6, astigmatism in both eyes).
+
+Volunteer feedback: "I saw lines 3 and 9 darker but could select only one". The dial labels both ends of each line, so one line looks like two. Fixed 14 Nov (export v6): the person now selects whole lines (1–5); one line gives axis = lower hour × 30, two neighbouring lines give the midpoint. Mapping for v5 exports: line = ((hour − 1) mod 6) + 1, so V1 run 3's 9 and 3 are both line 3 (3–9).
+
+### Run 4: without glasses, multi-line dial (15:39 UTC)
+Export v6. Camera tape-calibrated, saved card scale, letter chart.
+| Line | Right | Left |
+|---|---|---|
+| 6/19, 6/15 | 6/6 | 6/6 |
+| 6/12 | K✓ C→O ✗ Z✓ O✓ = pass | O→D ✗ N✓ S✓ O✓ = pass |
+| 6/9.5 | 3/3 | 3/3 |
+| 6/7.5 | 3/3 | H, R, S can't see = fail |
+| 6/6 | R✓ D✓, then Z, K, S can't see = fail | not tested |
+| **Result** | **6/7.5** | **6/9.5** |
+
+Dial: line 3–9 selected in both eyes, axis ≈ 90° (prescribed 80°). Duochrome: R equal, **L green**. At 50 cm a "green clearer" answer is common in normal eyes because accommodation lags slightly behind the target, so it is not read as long-sightedness here; duochrome is still not interpreted by the app. Distance median R 479 mm (470–490), L 512 mm (493–525). Triage: advise.
+
+**Head-tilt control (after run 4):** the volunteer tilted their head sideways and reported that the darker line **changed**. That fits real astigmatism fixed to the eye rather than suggestion or a screen artefact. The exact new line (expected 12–6) was not recorded.
+
+**Repeatability (without glasses, runs 2–4):** R 6/9.5, 6/7.5, 6/7.5 · L 6/7.5, 6/7.5, 6/9.5. That is within ±1 line, typical chart test–retest. In run 4 the left eye (more astigmatism) scored worse, matching the prescription. The dial gave the same line (3–9) in runs 3 and 4, but neither was blind.
+
+### Findings
+- **Agrees:** needs correction. Below 6/6 in both eyes without glasses, 6/6 or better with them.
+- **Disagrees: eye ranking.** The left eye has more astigmatism (−1.00 vs −0.50), so it should read worse, but it scored one line better. It is within the usual ±1 line test–retest variation, and both left-eye passes were the narrowest possible (3/5). The left eye was also tested second (practice effect). Needs a repeat.
+- **Astigmatism dial: missed in run 2, detected in run 3.** With the old 0.7 mm lines it read "Even" in both eyes despite −1.00 D in the left eye. After the change to thin, acuity-derived lines (run 3), both eyes reported the **3–9 line darker**, matching the prescribed axis 80° (the rule of 30 gives 90°). It also caught the right eye's −0.50 D. One volunteer, so not yet proof.
+- **Eye ranking in run 3:** both eyes 6/7.5. The expected "left worse" difference was not seen, but that is within test–retest variation.
+- **Duochrome "equal"** is consistent with the very small spherical equivalent.
+- **Possible keypad mis-tap:** "D → R" on the 6/9.5 line. On the 5×2 Sloan keypad, D is directly above R.
+- **PD 62.5 mm** is reference data for Phase 2 (selfie PD).
+- An earlier laptop run by V1 (screen 1920×1080, dpr 1, Tumbling E, with glasses) stopped at "6/9.5 or better (screen limit)" with all answers correct. It is excluded: the screen could not draw finer lines.
+
+---
+
+## V2 — 14 Nov 2026
+
+**Prescription (single vision, card last used Apr 2026):** R −0.25 / 0.00 · L −0.50 / 0.00 · PD 31.5 / 31.5 mm (63 mm total). Very mild short-sightedness, **no astigmatism prescribed**. Spherical equivalent R −0.25 D, L −0.50 D. Note that cards often omit astigmatism below 0.25–0.50 D.
+
+**Conditions:** same Android phone as V1 (360×800, dpr 2, saved card scale 5.42 px/mm), camera tape-calibrated, letter chart, export v6, **without glasses**. Blind for the dial: no expected line was mentioned to the volunteer.
+
+| Line | Right | Left |
+|---|---|---|
+| 6/19 to 6/12 | 9/9 | 9/9 |
+| 6/9.5 | H✓ N✓ O can't see ✗ H✓ = pass | 3/3 |
+| 6/7.5 | Z✓ V✓ D can't see ✗ Z✓ = pass | 3/3 |
+| 6/6 | R✓ H✓ R✓ = pass | Z✓, then K, N, O can't see = fail |
+| 6/4.8 | not drawable (screen limit) | not tested |
+| **Result** | **6/6 or better** | **6/7.5** |
+
+Dial: R line 4–10 (axis ≈ 120°), L lines 2–8 & 3–9 (axis ≈ 75°). Duochrome: R green, L equal. Distance median R 493 mm (479–505), L 487 mm (470–497). Triage: advise (left below 6/6; dial lines darker in both eyes).
+
+### Findings
+- **Acuity plausible.** With −0.25 / −0.50 D, near vision at 50 cm should be near normal. Right 6/6+ and left one line lower is consistent, and the left eye is the slightly more myopic one, though one line is within retest noise. "A lens may help" is borderline for a −0.25/−0.50 prescription. Distance vision without glasses would be the better measure, but the app does not test distance.
+- **Dial: flagged in both eyes although none is prescribed.** Darker lines were reported in both eyes, in **different** directions (120° and 75°). **Head-tilt re-check (one eye, presumably the right):** the volunteer first named line 10 (the 4–10 line). After a slight head tilt to the right, line 11 (5–11) looked darker. The line moved one step (30°) clockwise, the same direction as the tilt. That fits **small real astigmatism not on the card** rather than a screen artefact. Caveats: it was a slight tilt rather than a full 90°; the volunteer said "brighter", which needs confirming as "darker"; the left eye was not re-checked; and the volunteer knew the line might move. If confirmed, this is a **clinically minor true positive** (the optometrist did not prescribe it), so the dial cannot judge *how much* astigmatism there is. Possible causes considered before the re-check:
+  - **Specificity cost:** the thinner, near-threshold lines (14 Nov change) make the test more sensitive, but also more prone to false positives.
+  - **Rendering:** diagonal thin lines are anti-aliased differently from horizontal and vertical ones on the screen.
+  - **Small real astigmatism** (≤0.25 D) not written on the card.
+  - **Tear film or blinking** during the dial.
+- **Takeaway:** V1 (astigmatism −0.50/−1.00) was detected. V2 (none prescribed) was flagged, and the head tilt suggests small real astigmatism. The dial detects astigmatism but can't tell "worth correcting" from "too small to prescribe". With normal acuity (V2 right eye 6/6+), a dial-only flag probably shouldn't raise triage to "a lens is likely to help". Proposed fix: an in-app rotation re-check. Show the dial rotated and ask again; real astigmatism stays at the same physical direction, while artefacts and guesses don't.
+- **Duochrome "green" again in one eye.** This is consistent with accommodative lag at 50 cm, and it is uninformative for myopia at near.
+- **PD 63 mm** is reference data for Phase 2.
+
+## V3 — 14 Nov 2026
+
+**Prescription (single vision, optometrist test 08 Nov 2024, two years old):** R −3.00 / 0.00 · L −3.50 / 0.00 · PD 33 / 31 mm (64 mm total). Moderate short-sightedness, no astigmatism. The prescription may have changed since 2024.
+
+**Conditions:** a different Android phone (450×1000 CSS px, dpr 1.6), saved card scale 6.33 px/mm, camera tape-calibrated, letter chart, export v7, **with glasses** (glasses question: "Glasses"). Run 2 without glasses not done yet.
+
+| | Right | Left |
+|---|---|---|
+| Acuity (50 cm) | 6/7.5 or better (screen limit) | 6/7.5 or better (screen limit) |
+| Errors | 1 at 6/12, 1 at 6/7.5 | 2 at 6/12, 1 at 6/7.5 |
+| Dial | Even | Even |
+| Duochrome | green | green |
+| Distance median (range) | 492 mm (459–517) | 476 mm (454–511) |
+| Triage | ok, no reasons, no notes | |
+
+### Findings
+- **With glasses, it agrees.** The glasses correct him fully, so near vision should be normal, the dial even and triage "no concern". All three match. The dial gave no false positive this time (unlike V2), and there is no cylinder on the prescription.
+- **Screen limit at 6/7.5.** At 6.33 px/mm and dpr 1.6, a 6/6 letter at 50 cm has strokes about 1.5 device px wide, too thin to draw. This phone can't confirm 6/6. For validation, use a phone with a denser screen, or note the cap.
+- **Duochrome green in both eyes, with full distance glasses at 50 cm.** This is expected from accommodative lag (or slight over-minus), not a sign of long-sightedness. It is the third "green" in three volunteers (V2 R, V3 R+L). For backlog item 3: at 50 cm, green is uninformative. Only **red** is meaningful: it means the eye is still more than about 2 D short-sighted at that distance, either uncorrected or under-corrected.
+- **Prediction for the run without glasses (written down before the run):** at 50 cm, a −3.00 D eye has about 1.00 D of blur left (far point 33 cm) and a −3.50 D eye about 1.50 D. Expect the right eye at roughly 6/12–6/19 and the left one about a line worse (6/19–6/24). Expect duochrome **red** in both eyes, the dial even, and triage "advise" or "refer" (refer if the left eye is worse than 6/18 or the eyes differ by two lines). Unlike V1/V2, this volunteer is myopic enough for the 50 cm test to detect (known issue 1: up to about −2 D reads normal).
+- **PD 64 mm (33 / 31)** is reference data for Phase 2.

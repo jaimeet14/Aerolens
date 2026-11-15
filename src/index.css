@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/* Soft shapes, warm stone neutrals, one deep-teal accent for actions and progress.
+   Test stimuli (black E, white dial panel, red/green duochrome) are set in the components and must not use these tokens. */
+@theme {
+  --color-cream: #f6f3ee;
+  --color-surface: #ffffff;
+  --color-sunk: #f3efe9;
+  --color-line: #e8e2d9;
+  --color-ink: #1a1714;
+  --color-muted: #5f5850;
+  --color-subtle: #736b62;
+  --color-brand: #0f5c55;
+  --color-brand-hover: #0a4741;
+  --color-brand-soft: #ddede9;
+}
+
+html, body, #root { height: 100%; }
+/* System fonts only (works offline, nothing downloaded). The Latin fonts come first, so English looks as before; Hindi
+   (Devanagari) then falls to the phone's own Devanagari font: Noto Sans Devanagari (Android), Kohinoor Devanagari
+   (iOS/macOS), Nirmala UI or Mangal (Windows). Browsers also fall back per character, so a missing one is harmless. */
+body { background: var(--color-cream); color: var(--color-ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", "Kohinoor Devanagari", "Nirmala UI", Mangal, sans-serif; -webkit-tap-highlight-color: transparent; }
+/* In the components layer so utility classes on an element (px-2, rounded-2xl, ...) can override these. */
+@layer components {
+  .btn { @apply rounded-full px-5 py-3.5 font-medium transition active:scale-95 disabled:opacity-40; }
+  .btn-primary { @apply bg-brand text-white hover:bg-brand-hover; }
+  .btn-ghost { @apply bg-surface text-ink ring-1 ring-line hover:bg-sunk; }
+  .card { @apply rounded-[22px] bg-surface p-6; }
+}
+/* Staff summary printing (components/Staff.tsx): app chrome and buttons hidden, black text on white, no tinted panels. */
+@media print {
+  @page { margin: 12mm; }
+  html, body, #root { height: auto; background: #fff !important; }
+  body { color: #000 !important; }
+  main { max-width: none !important; padding: 0 !important; }
+  .no-print, button { display: none !important; }
+  .print-area, .print-area * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+  .print-area .card { border: 1px solid #000; border-radius: 0; padding: 10px 12px; break-inside: avoid; }
+  .print-area .badge { border: 1px solid #000; }
+}

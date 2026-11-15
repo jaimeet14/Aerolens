@@ -1,0 +1,76 @@
+# AeroLens
+
+Device-free eye assessment and lens recommendation for optical counters that have only a counter and a phone.
+Team Aero, NIT Rourkela — ZEISS India Hackathon, theme "No-Device Vision Intelligence & Accessible Clinical UX".
+
+## Deadlines
+- Mid-term progress reply: **sent 12 Nov 2026** (on deadline), with a 1-on-1 mentorship request. Awaiting a slot from Kharan Basumatary (ZEISS).
+- Evaluation starts 20 Nov 2026. Final submission by **25 Nov 2026**: working prototype + presentation of **max 6 slides**.
+- In-person finale at ZEISS India: January 2027.
+- Team has end-semester exams in this period — favour small, high-value changes.
+
+## Routing (agents in `.claude/agents`)
+0. Skip routing for questions, explanations and planning: just answer. Routing is only for changes to files.
+1. For every code change, call the triage agent first.
+2. Delegate to the agent matching its route: quick, build or deep.
+   Pass the full task and the triage JSON. Never pass a model parameter.
+3. Then call the verifier with the risk and checks from triage.
+4. If the verifier says FAIL, retry once, one step up:
+   - it skipped a file or didn't run the tests -> more effort (quick -> build)
+   - it had full context and was still wrong -> bigger model (build -> deep -> escalate)
+5. After any escalation, ask triage to save one line to its memory:
+   "<task pattern> -> <route that worked>".
+
+## Stack
+React 19 + TypeScript + Tailwind v4, Vite, Vitest. MediaPipe Face Mesh (iris landmarks) runs on-device; its assets are copied from node_modules into `public/mediapipe` by `scripts/copy-mediapipe.mjs` (gitignored).
+
+## Commands
+```
+npm install
+npm run dev      # vite --host; on a phone the camera needs HTTPS (deploy) or localhost
+npm test         # vitest, 368 unit tests
+npm run build    # tsc --noEmit && vite build
+```
+`?demo=1` disables the camera and fixes distance at 50 cm, for UI work on a laptop.
+
+## Layout
+- `src/lib/` — pure logic, all unit-tested: `optics.ts` (optotype sizing, pinhole iris distance, focal length), `i18n.ts` (whole-app language: `Lang` 'en' | 'hi' (re-exported by interview.ts), `Text` = `Record<Lang, string>` so a missing translation fails `tsc` (adding Odia = add 'or' to `Lang` and fill every table), `fmt` {placeholder} filling, `splitTemplate`/`richParts` (**bold**), `listText`, `inLang`; the patient-screen string tables per screen, all in `SCREENS`; generated clinical sentences keep their `*_TEXT` tables next to their code in triage/recommend/face/dial/correction/calibration.ts, whose functions take `lang` (default 'en', English output byte-identical); every Hindi string is listed for review in `docs/hindi-review.md`), `acuity.ts` (bracketing staircase, shared by all three charts; `nextDir` no-repeat direction picker for the E and the C; `presetChart`: Hindi session → Landolt C), `sloan.ts` (10 Sloan letters as 5x5-grid SVG paths + no-repeat picker), `landolt.ts` (ISO 8596 Landolt C: outer diameter 5 × stroke, parallel-sided gap = stroke, 4 gap directions (`Dir`) as 5x5-grid SVG paths; diameter = Tumbling E height via `optotypeHeightMm`), `svgPath.testutil.ts` (test-only: path flattening/measuring helpers shared by the Sloan and Landolt tests), `triage.ts` (red flags + provisional thresholds; `session.safetyFlags` always stores the English `RED_FLAGS` strings, shown translated with `redFlagText`), `report.ts` (export v12: chart 'E' | 'letters' | 'C', per-answer distances, device, glasses, calibration, scale source, `fit` block, `recommendation` block, `interview` answers + `lang`), `scale.ts` (saved card-scale calibration: screen signature + strict parse/match), `storage.ts` (localStorage helpers that never throw; use them for all storage access), `dial.ts` (dial line width from acuity; darker-line selection → axis estimate by the rule of 30; heuristics), `calibration.ts` (required camera calibration helpers), `face.ts` (Phase 2: frame quality check, PD at 50 cm + estimated distance PD and monocular PDs, face measurements, face-shape classifier, frame-fit suggestions; all thresholds PROVISIONAL), `recommend.ts` (Phase 3 step 1: explainable rule-based lens/lens-option/frame suggestions from session + triage + optional `Interview` (null when the questions were skipped); duochrome tendency notes; ZEISS family names in one `ZEISS_FAMILY` table, to verify against ZEISS India's catalogue; never lens powers; rules PROVISIONAL), `interview.ts` (Phase 3 step 2: the 5 interview questions with stable ids q1..q5 (future clips `/audio/<lang>/<id>`), English + Hindi text for every question, option and UI string (Hindi approved by the user; keep it), answer/toggle helpers incl. "None of these", `buildInterview` → `Interview` or null when incomplete), `history.ts` (Phase 3 step 3: recent sessions in localStorage `aerolens.history`: `HistoryEntry` { id, startedAt, savedAt, report } (reads report v11–v12, so sessions saved before the Landolt C are kept; chart 'C' only valid in v12; id and start time live in the entry, not the report), newest first, max 20, one per id, strict parse that drops malformed entries, add/delete/clear via the `storage.ts` helpers (never throw; drops oldest when full); `sessionEntry` builds the same triage/recommendation/report as results; English staff labels; no names stored), `types.ts`.
+- `src/hooks/useIrisDistance.ts` — camera + Face Mesh, median-filtered iris width → distance; tape-measure focal calibration is required once per phone (saved in localStorage `aerolens.focalPx`; demo mode exempt). `subscribeFace(cb)` streams per-frame landmarks in px for the fit capture (demo mode feeds a fixed face).
+- `src/components/` — every patient component takes `lang` (session.lang) and reads its words from lib/i18n.ts; `Stages.tsx` (welcome with the English/हिन्दी choice first, safety, referral, card-scale, camera), `Tests.tsx` (cover prompt with the chart choice, acuity, astigmatism dial, duochrome), `DistanceGuard.tsx` (shows tests only within ±10% of 50 cm), `TumblingE.tsx`, `SloanLetter.tsx`, `LandoltC.tsx` (SVG, fixed stimulus colour; also the small answer-key icons; optional translated `label`), `Text.tsx` (`Rich` for **bold** and `Fill` for elements in {placeholders}), `Fit.tsx` (PD/face-shape capture + `FitSummary`; `lang` defaults to English, so the staff screen shows the stored sentences), `Interview.tsx` (`InterviewStep`: one question per screen in session.lang, Back from question 2, Skip questions → interview null, language kept), `Results.tsx` (shows the session's saved `HistoryEntry`: triage, "Lens suggestions", per-eye results, fit, JSON export, "Staff view" button; in Hindi it shows a second triage + recommendation built in session.lang, while the saved report and JSON stay English), `Staff.tsx` (English-only staff screens: `StaffSummary` one-screen printable summary of a stored report (Print → `window.print`, `@media print` in `index.css` hides `.no-print` chrome and buttons, black on white), `StaffList` recent sessions with time, triage level, demo badge, delete one, Clear all behind an in-app confirm), `Progress.tsx` (5-segment header progress: Setup (welcome, safety, interview), Calibrate, Right eye, Left eye, Frame fit).
+- Theme: colour tokens live in `@theme` in `src/index.css` (warm stone + deep teal `brand`). Test stimuli use fixed colours, never tokens.
+- `src/App.tsx` — stage machine: welcome (language choice first: sets session.lang, default English, kept by Start over / New test; `<html lang>` follows it, English on staff screens) → safety → (referral: red flags end here, no interview) → interview (skippable; the language is kept) → scale (skipped when a saved calibration in localStorage `aerolens.scale` matches this screen) → camera → per eye (cover → acuity → astig → duo; the first cover screen asks for the chart, except in a Hindi session, which presets the Landolt C) → fit (skippable) → results (the report is built and saved to `aerolens.history` once, in the fit step's done handler) → staff (summary; Back returns to results). Welcome → "Recent sessions (staff)" → history (list) → staff (summary; Back returns to the list). Each Start makes a new session id + start time (`SessionMeta`, kept beside the Session).
+
+## Conventions
+- Keep clinical/optical logic in `src/lib/` as pure functions with Vitest tests; components stay thin.
+- Physical sizes are in mm and converted with `pxPerMm` from the ID-card step (ID-1 short edge 53.98 mm).
+- It is a screening/triage aid, never a prescription — keep that wording in the UI.
+- Run `npm test` and `npm run build` before calling a change done.
+
+## Status
+Phase 1 (vision tests) built and working: safety screen (+ glasses question), card-scale calibration, iris distance + gating, acuity per eye with a choice of Sloan letter chart, Tumbling E or Landolt C (chosen on the first eye; a Hindi interview gets the Landolt C without the question), astigmatism dial, duochrome, results with triage and JSON export.
+
+Phase 2 built 15 Nov 2026 (demo-mode tested; not yet tried on a real phone camera): selfie PD (measured at 50 cm + estimated distance PD, monocular), face shape with reasons, frame size/style suggestions. PD scale rests on the 11.7 mm iris assumption (about ±2.5 mm); validate against reference PDs in `docs/validation.md`.
+
+Phase 3 step 1 built 15 Nov 2026: rule-based lens recommendation (`recommend.ts`, "Lens suggestions" on results, export v10). Without the interview it can only suggest single vision (age unknown).
+
+Phase 3 step 2 built 15 Nov 2026 (demo-mode tested): short text + tap interview in English and Hindi after the safety screen, feeding `recommend()`; export v11 adds `interview` and `lang`. Hindi wording still to be checked by a native speaker.
+
+Phase 3 step 3 built 15 Nov 2026 (demo-mode tested at 375/360 px; print preview not checked on a phone): staff screen with the recent sessions on this phone (`history.ts`, `Staff.tsx`); entry points "Staff view" on results and "Recent sessions (staff)" on welcome.
+
+Landolt C chart built 15 Nov 2026 (demo-mode tested): third acuity chart, same size rule and staircase as the E, export v12. Not yet compared with a printed chart on volunteers (see `docs/validation.md`).
+
+Whole-app language built 15 Nov 2026 (demo-mode tested at 360/375 px, full Hindi and English sessions): English/हिन्दी chosen first on the welcome screen; every patient screen, generated triage/lens/frame sentences and aria labels in Hindi; staff screens, JSON export and history stay English (a Hindi session's report equals the English one apart from `lang`; still v12). Devanagari uses the phone's system fonts (stack in `index.css`, nothing downloaded). Hindi wording (376 strings, `docs/hindi-review.md`) still to be checked by a native speaker.
+
+Not built: Phase 3 voice for the interview (recorded clips per question id; Odia text: add 'or' to `Lang` in i18n.ts and `tsc` lists every missing string), a multi-device staff dashboard (history is per phone only) · Phase 4 validation vs a standard Snellen chart on 10–15 volunteers.
+
+## Known issues / backlog (from review, 12 Nov 2026)
+1. **Near vs distance acuity** (partly done 14 Nov: results now labelled "Near vision (50 cm)"; a distance mode is still not built): testing at 50 cm measures near/intermediate acuity; myopes up to about −2 D read "6/6". Results are labelled as Snellen distance values. At minimum relabel as "near acuity at 50 cm"; consider a distance mode.
+2. ~~Results screen shows Snellen only~~ — fixed 14 Nov: logMAR shown next to 6/x.
+3. ~~Duochrome answer is recorded but never interpreted~~ — fixed 15 Nov: `recommend.ts` turns red clearer → possible myopic tendency, green → possible hyperopic tendency (cautious wording: tested at 50 cm), as notes and lens reasons in "Lens suggestions" and the export. Triage levels are unchanged.
+4. ~~Default FOV guess~~ — fixed 14 Nov: tape-measure camera calibration is now required once per phone.
+5. Manifest exists but no service worker, so the app isn't installable/offline yet.
+6. ~~Card-scale slider on 360-px phones~~ — fixed 12 Nov: full-bleed box (`scaleBoxMaxPx`), measured rendered width, inset ring.
+7. ~~Not deployed~~ — deployed 12 Nov 2026 to Vercel: https://aerolens-navy.vercel.app (redeploy: `npx vercel@latest deploy --prod --yes`).
+8. Not yet a git repo / on GitHub — the progress email needs the repo link.
+
+Suggested priority before 25 Nov: deploy → Phase 4 validation → Phase 2 PD → minimal rule-based recommendation (Phase 3 without voice if time is short) → 6-slide deck.
