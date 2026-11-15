@@ -4,13 +4,23 @@ import { OFFLINE_WAIT_MS, offlineStatus, type OfflineStatus } from '../lib/offli
 const POLL_MS = 500;
 
 /**
- * Offline readiness of the app, from the service worker registered by dist/registerSW.js (vite-plugin-pwa).
+ * The controller when this page (this copy of the JS) loaded. Captured once at module load, not at hook mount, so a
+ * welcome screen shown again later (Start over) still knows the page runs the code it loaded with. A first install
+ * has none (clientsClaim then fires controllerchange, which is not an update).
+ */
+const LOAD_CONTROLLER: ServiceWorker | null =
+  typeof navigator !== 'undefined' && 'serviceWorker' in navigator ? navigator.serviceWorker.controller : null;
+
+/**
+ * Offline / update status of the app, from the service worker registered by dist/registerSW.js (vite-plugin-pwa).
  * Only observes: never registers, updates or unregisters a worker, and never touches storage.
  */
 export function useOfflineReady(): OfflineStatus {
   const supported = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
   const isDev = import.meta.env.DEV;
-  const [facts, setFacts] = useState({ hasActive: false, hasPending: false, failed: false, timedOut: false });
+  const [facts, setFacts] = useState({
+    hasActive: false, hasPending: false, failed: false, timedOut: false, controllerChanged: false,
+  });
 
   useEffect(() => {
     if (!supported || isDev) return;
@@ -18,6 +28,7 @@ export function useOfflineReady(): OfflineStatus {
     let reg: ServiceWorkerRegistration | undefined;
     let disposed = false;
     let failed = false;
+    let changed = false;
     const watched = new Set<ServiceWorker>();
 
     const refresh = () => {
@@ -27,18 +38,25 @@ export function useOfflineReady(): OfflineStatus {
       }
       const hasActive = !!reg?.active;
       const hasPending = !!(reg?.installing || reg?.waiting);
-      setFacts((f) => ({ ...f, hasActive, hasPending, failed }));
+      // Also catches a takeover that happened while the welcome screen was not mounted.
+      const controllerChanged = changed || (!!sw.controller && sw.controller !== LOAD_CONTROLLER);
+      setFacts((f) => ({ ...f, hasActive, hasPending, failed, controllerChanged }));
     };
     function onState(this: ServiceWorker) {
       if (this.state === 'redundant' && !reg?.active) failed = true;
       refresh();
     }
+    const onControllerChange = () => {
+      // Only counts as an update when the page loaded under a controller (see LOAD_CONTROLLER).
+      if (sw.controller) changed = true;
+      refresh();
+    };
     const attach = (r: ServiceWorkerRegistration | undefined) => {
       if (disposed || !r || reg) return;
       reg = r;
       r.addEventListener('updatefound', refresh);
       clearInterval(poll);
-      clearTimeout(timer);
+      // The timeout keeps running: a registration without any worker still hides the line after the wait.
       refresh();
     };
 
@@ -46,22 +64,22 @@ export function useOfflineReady(): OfflineStatus {
     const poll = setInterval(() => { sw.getRegistration().then(attach, () => {}); }, POLL_MS);
     const timer = setTimeout(() => {
       clearInterval(poll);
-      if (!disposed && !reg) setFacts((f) => ({ ...f, timedOut: true }));
+      if (!disposed) setFacts((f) => ({ ...f, timedOut: true }));
     }, OFFLINE_WAIT_MS);
     sw.getRegistration().then(attach, () => {});
     // Resolves once a worker is active (precache complete), without a reload.
     sw.ready.then((r) => { attach(r); refresh(); }, () => {});
-    sw.addEventListener('controllerchange', refresh);
+    sw.addEventListener('controllerchange', onControllerChange);
 
     return () => {
       disposed = true;
       clearInterval(poll);
       clearTimeout(timer);
-      sw.removeEventListener('controllerchange', refresh);
+      sw.removeEventListener('controllerchange', onControllerChange);
       reg?.removeEventListener('updatefound', refresh);
       for (const w of watched) w.removeEventListener('statechange', onState);
     };
   }, [supported, isDev]);
 
-  return offlineStatus({ supported, isDev, ...facts });
+  return offlineStatus({ supported, isDev, controlledAtLoad: !!LOAD_CONTROLLER, ...facts });
 }

@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Build time for the version label on the welcome screen (src/lib/version.ts); no git hash, the Vercel CLI
+  // builds without .git. Vitest reads this config too, so the constant exists in tests.
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     react(),
     tailwindcss(),

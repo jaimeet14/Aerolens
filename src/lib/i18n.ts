@@ -120,6 +120,10 @@ export const WELCOME = {
   recent: { en: 'Recent sessions (staff)', hi: 'पिछली जाँचें (स्टाफ़ के लिए)' },
   offlineDownloading: { en: 'Downloading for offline use…', hi: 'ऑफ़लाइन उपयोग के लिए डाउनलोड हो रहा है…' },
   offlineReady: { en: '✓ Ready offline', hi: '✓ ऑफ़लाइन तैयार' },
+  offlineUpdating: { en: 'Updating…', hi: 'अपडेट हो रहा है…' },
+  offlineUpdateReady: { en: 'Update ready — reload to use it', hi: 'अपडेट तैयार है — इस्तेमाल के लिए रीलोड करें' },
+  reloadNow: { en: 'Reload now', hi: 'अभी रीलोड करें' },
+  version: { en: 'Version: {time}', hi: 'संस्करण: {time}' },
 } satisfies Record<string, Text>;
 
 export const SAFETY = {

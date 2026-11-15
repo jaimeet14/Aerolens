@@ -4,11 +4,23 @@ import { useOfflineReady } from '../hooks/useOfflineReady';
 import { screenLimit } from '../lib/acuity';
 import { CALIBRATE_MAX_CM, CALIBRATE_MIN_CM, parseCalibrationDistanceMm, startBlocker } from '../lib/calibration';
 import { testedWithFrom, type ContactLenses } from '../lib/correction';
-import { CALIBRATION, CAMERA, DATE_LOCALE, fmt, LANG_NAME, LANGS, REFERRAL, SAFETY, SCALE, WELCOME, type Lang } from '../lib/i18n';
+import { CALIBRATION, CAMERA, DATE_LOCALE, fmt, LANG_NAME, LANGS, REFERRAL, SAFETY, SCALE, WELCOME, type Lang, type Text } from '../lib/i18n';
 import { CARD_SHORT_MM, scaleBoxMaxPx } from '../lib/optics';
 import { RED_FLAGS, redFlagText } from '../lib/triage';
 import type { Correction, TestedWith } from '../lib/types';
+import { formatBuildTime } from '../lib/version';
+import type { OfflineStatus } from '../lib/offline';
 import { Fill, Rich } from './Text';
+
+/** Build time in the phone's local time; the typeof guard keeps it safe where `define` did not run. */
+const BUILD_LABEL = formatBuildTime(typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : '');
+
+const OFFLINE_TEXT: Record<Exclude<OfflineStatus, 'hidden'>, Text> = {
+  downloading: WELCOME.offlineDownloading,
+  ready: WELCOME.offlineReady,
+  updating: WELCOME.offlineUpdating,
+  'update-ready': WELCOME.offlineUpdateReady,
+};
 
 /**
  * The first screen. The language choice comes first, with each language named in its own script; everything below
@@ -49,13 +61,21 @@ export function Welcome({ lang, onLang, onStart, onRecent }: {
       <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">{T.disclaimer[lang]}</p>
       <button className="btn btn-primary mt-5 w-full" onClick={onStart}>{T.start[lang]}</button>
       {DEMO && <p className="mt-3 text-center text-xs text-subtle">{T.demo[lang]}</p>}
-      {/* Offline readiness of the service worker; the live region stays mounted so the change to "ready" is announced. */}
-      <p className={`text-center text-xs text-subtle ${offline === 'hidden' ? 'hidden' : 'mt-2'}`} aria-live="polite">
-        {offline === 'downloading' ? T.offlineDownloading[lang] : offline === 'ready' ? T.offlineReady[lang] : ''}
-      </p>
+      {/* Offline / update status of the service worker; the live region stays mounted so each change is announced.
+          Welcome screen only, so "Reload now" never interrupts a test. */}
+      <div className={`text-center text-xs text-subtle ${offline === 'hidden' ? 'hidden' : 'mt-2'}`}>
+        <p aria-live="polite">{offline === 'hidden' ? '' : OFFLINE_TEXT[offline][lang]}</p>
+        {offline === 'update-ready' && (
+          <button type="button" className="mt-1 min-h-9 rounded-full px-3 text-xs font-medium text-brand ring-1 ring-brand/40"
+            onClick={() => location.reload()}>
+            {T.reloadNow[lang]}
+          </button>
+        )}
+      </div>
       <button className="mt-4 block w-full text-center text-sm font-medium text-brand underline-offset-4 hover:underline" onClick={onRecent}>
         {T.recent[lang]}
       </button>
+      {BUILD_LABEL && <p className="mt-3 text-center text-[11px] text-subtle">{fmt(T.version[lang], { time: BUILD_LABEL })}</p>}
     </div>
   );
 }

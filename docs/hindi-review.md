@@ -4,7 +4,7 @@ For a native Hindi speaker to check. Each table lists one screen: the key (where
 source, and the Hindi shown when the customer picks हिन्दी on the welcome screen. Aim: simple everyday Hindi that a small-town
 customer at an optical counter understands, in the same style as the interview text (section 4), which was already approved.
 
-378 strings in 17 sections. Generated from the string tables on 15 Nov 2026; if you change a Hindi string,
+382 strings in 17 sections. Generated from the string tables on 15 Nov 2026; if you change a Hindi string,
 change it in the file named under the section title (the key says which entry) and update this file.
 
 ## How to read the tables
@@ -66,6 +66,10 @@ Code: src/lib/i18n.ts WELCOME
 | WELCOME.recent | Recent sessions (staff) | पिछली जाँचें (स्टाफ़ के लिए) |
 | WELCOME.offlineDownloading | Downloading for offline use… | ऑफ़लाइन उपयोग के लिए डाउनलोड हो रहा है… |
 | WELCOME.offlineReady | ✓ Ready offline | ✓ ऑफ़लाइन तैयार |
+| WELCOME.offlineUpdating | Updating… | अपडेट हो रहा है… |
+| WELCOME.offlineUpdateReady | Update ready — reload to use it | अपडेट तैयार है — इस्तेमाल के लिए रीलोड करें |
+| WELCOME.reloadNow | Reload now | अभी रीलोड करें |
+| WELCOME.version | Version: {time} | संस्करण: {time} |
 
 ## 2. Safety questions (red flags, glasses)
 
