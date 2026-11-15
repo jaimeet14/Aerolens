@@ -22,7 +22,7 @@ Team Aero, NIT Rourkela — ZEISS India Hackathon, theme "No-Device Vision Intel
    "<task pattern> -> <route that worked>".
 
 ## Stack
-React 19 + TypeScript + Tailwind v4, Vite, Vitest. MediaPipe Face Mesh (iris landmarks) runs on-device; its assets are copied from node_modules into `public/mediapipe` by `scripts/copy-mediapipe.mjs` (gitignored).
+React 19 + TypeScript + Tailwind v4, Vite, Vitest. MediaPipe Face Mesh (iris landmarks) runs on-device; its assets are copied from node_modules into `public/mediapipe` by `scripts/copy-mediapipe.mjs` (gitignored). Offline: `vite-plugin-pwa` (Workbox generateSW, config in `vite.config.ts`) builds `dist/sw.js`; there is no service worker in `npm run dev`, so test offline with `npm run build` + `npm run preview`.
 
 ## Commands
 ```
@@ -68,7 +68,7 @@ Not built: Phase 3 voice for the interview (recorded clips per question id; Odia
 2. ~~Results screen shows Snellen only~~ — fixed 14 Nov: logMAR shown next to 6/x.
 3. ~~Duochrome answer is recorded but never interpreted~~ — fixed 15 Nov: `recommend.ts` turns red clearer → possible myopic tendency, green → possible hyperopic tendency (cautious wording: tested at 50 cm), as notes and lens reasons in "Lens suggestions" and the export. Triage levels are unchanged.
 4. ~~Default FOV guess~~ — fixed 14 Nov: tape-measure camera calibration is now required once per phone.
-5. Manifest exists but no service worker, so the app isn't installable/offline yet.
+5. ~~Manifest exists but no service worker~~ — fixed 15 Nov 2026: `vite-plugin-pwa` service worker (autoUpdate, no forced reload) precaches the app shell and every `public/mediapipe` file (~16.5 MB), with an `index.html` fallback so `/?demo=1` works offline; `public/manifest.webmanifest` stays the only manifest; `vercel.json` serves `sw.js` with `max-age=0`.
 6. ~~Card-scale slider on 360-px phones~~ — fixed 12 Nov: full-bleed box (`scaleBoxMaxPx`), measured rendered width, inset ring.
 7. ~~Not deployed~~ — deployed 12 Nov 2026 to Vercel: https://aerolens-navy.vercel.app (redeploy: `npx vercel@latest deploy --prod --yes`).
 8. Not yet a git repo / on GitHub — the progress email needs the repo link.

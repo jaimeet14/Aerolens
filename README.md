@@ -37,7 +37,7 @@ Device-free eye assessment and lens recommendation for optical counters that hav
 Protocol and results in [`docs/validation.md`](docs/validation.md): AeroLens results compared with each volunteer's prescription and, where possible, a printed Snellen chart. Three volunteers so far; the Landolt C still needs its own comparison.
 
 ## Not built yet
-Voice for the interview, Odia, offline install (service worker), a distance-acuity mode, a multi-device staff dashboard.
+Voice for the interview, Odia, a distance-acuity mode, a multi-device staff dashboard.
 
 ## Known limits
 - Testing at 50 cm measures near/intermediate acuity: mild myopes (up to about −2 D) can still read 6/6.
