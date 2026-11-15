@@ -156,7 +156,7 @@ describe('triage in Hindi', () => {
   it('reads naturally for one case', () => {
     expect(triage([], { right: eye(0.1), left: eye(0) }, 500, 'hi')).toEqual({
       level: 'advise',
-      headline: 'लेंस से आपको मदद मिल सकती है',
+      headline: 'चश्मे से मदद मिल सकती है: जब हो सके, आँखों की जाँच करवाएँ',
       reasons: ['दाईं आँख की पास की नज़र (50 cm) 6/6 से कम है (6/7.5); लेंस से मदद मिल सकती है।'],
       notes: [],
     });

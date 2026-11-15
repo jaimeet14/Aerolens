@@ -26,6 +26,8 @@ Comparing AeroLens results with each volunteer's known spectacle prescription an
 
 `6/6+` = 6/6 or better (the screen could not draw a smaller line).
 
+- **Triage rule changed 15 Nov 2026:** a two-line difference between the eyes is now 'advise' (refer from three lines). Under the new rule V3, V4 and V5 would be 'advise'. (The "triage refer" entries above and in the runs below are what the app showed at the time; `triage.test.ts` replays all three.)
+
 ---
 
 ## V1 — 14 Nov 2026

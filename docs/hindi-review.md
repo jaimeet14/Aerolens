@@ -4,7 +4,8 @@ For a native Hindi speaker to check. Each table lists one screen: the key (where
 source, and the Hindi shown when the customer picks हिन्दी on the welcome screen. Aim: simple everyday Hindi that a small-town
 customer at an optical counter understands, in the same style as the interview text (section 4), which was already approved.
 
-382 strings in 17 sections. Generated from the string tables on 15 Nov 2026; if you change a Hindi string,
+384 strings in 17 sections. Generated from the string tables on 15 Nov 2026 (triage headlines, the two difference
+reasons and REC_TEXT.eyeTestFirst changed later the same day); if you change a Hindi string,
 change it in the file named under the section title (the key says which entry) and update this file.
 
 ## How to read the tables
@@ -439,10 +440,11 @@ Code: src/lib/triage.ts TRIAGE_TEXT
 | TRIAGE_TEXT.below6 | {eye} eye {near} is below 6/6 ({snellen}); a lens may help. | {eye} की {near} 6/6 से कम है ({snellen}); लेंस से मदद मिल सकती है। |
 | TRIAGE_TEXT.dialNote | {eye} eye: some dial lines looked darker — possible mild astigmatism. Mention it at your next eye check. | {eye}: गोले की कुछ लाइनें ज़्यादा गहरी दिखीं — हल्का एस्टिग्मैटिज़्म (सिलेंडर नंबर) हो सकता है। अगली बार आँखों की जाँच में यह बताएँ। |
 | TRIAGE_TEXT.dialReason | {eye} eye: some dial lines looked darker, which can point to astigmatism. | {eye}: गोले की कुछ लाइनें ज़्यादा गहरी दिखीं, जो एस्टिग्मैटिज़्म (सिलेंडर नंबर) का संकेत हो सकता है। |
-| TRIAGE_TEXT.differ | The two eyes' {near} differs by two or more lines. | दोनों आँखों की {near} में दो या ज़्यादा लाइनों का फ़र्क है। |
-| TRIAGE_TEXT.headRefer | Please have an optometrist check your eyes | कृपया ऑप्टोमेट्रिस्ट से अपनी आँखों की जाँच करवाएँ |
-| TRIAGE_TEXT.headAdvise | A lens recommendation is likely to help | लेंस से आपको मदद मिल सकती है |
-| TRIAGE_TEXT.headOk | No concern found in this screening | इस जाँच में कोई परेशानी नहीं मिली |
+| TRIAGE_TEXT.differ2 | The two eyes' {near} differs by two lines. | दोनों आँखों की {near} में दो लाइनों का फ़र्क है। |
+| TRIAGE_TEXT.differ3 | The two eyes' {near} differs by three or more lines. | दोनों आँखों की {near} में तीन या ज़्यादा लाइनों का फ़र्क है। |
+| TRIAGE_TEXT.headRefer | Please see an optometrist soon | कृपया जल्द ही ऑप्टोमेट्रिस्ट को दिखाएँ |
+| TRIAGE_TEXT.headAdvise | Glasses are likely to help: get an eye test when you can | चश्मे से मदद मिल सकती है: जब हो सके, आँखों की जाँच करवाएँ |
+| TRIAGE_TEXT.headOk | No concern found today | आज की जाँच में कोई परेशानी नहीं मिली |
 
 ## 16. Results: per eye, chart and glasses lines, buttons
 
@@ -508,6 +510,7 @@ Code: src/lib/i18n.ts KIND_NAME; src/lib/recommend.ts STATUS_TEXTS, CATEGORY_TEX
 | CATEGORY_TEXT.myopiaManagement | Myopia-management lens | मायोपिया कंट्रोल लेंस |
 | REC_TEXT.referFirst | Please see an eye doctor before choosing lenses: the symptoms you reported need a check first. Lens options can wait until after that visit. | लेंस चुनने से पहले आँखों के डॉक्टर को दिखाएँ: आपने जो परेशानी बताई, उसकी पहले जाँच ज़रूरी है। लेंस के विकल्प उसके बाद देखे जा सकते हैं। |
 | REC_TEXT.afterCheck | The screening suggests an eye check by an optometrist first. These options are to discuss after the check, once your prescription is measured. | इस जाँच के हिसाब से पहले ऑप्टोमेट्रिस्ट से आँखों की जाँच करवाएँ। ये विकल्प उस जाँच के बाद बात करने के लिए हैं, जब आपका चश्मे का नंबर नप जाए। |
+| REC_TEXT.eyeTestFirst | Get an eye test by an optometrist before buying lenses: only that test measures the lens power you need. These options are to discuss at the test. | लेंस खरीदने से पहले ऑप्टोमेट्रिस्ट से आँखों की जाँच करवाएँ: आपके लेंस का नंबर सिर्फ़ उसी जाँच से तय होता है। ये विकल्प उस जाँच के समय बात करने के लिए हैं। |
 | REC_TEXT.noneWithOptions | No lens is indicated by this screening. The options below match your answers, if you choose glasses anyway (for example for screens or sun); ask the optician which are available. | इस जाँच के हिसाब से लेंस की ज़रूरत नहीं दिखी। अगर आप फिर भी चश्मा लेना चाहें (जैसे स्क्रीन या धूप के लिए), तो नीचे के विकल्प आपके जवाबों से मेल खाते हैं; दुकान पर पूछें कि इनमें से कौन-से मिलते हैं। |
 | REC_TEXT.noInterview | Age was not asked, so progressive and office lenses (for near focus from about 40) are not considered; they need the age question. | उम्र नहीं पूछी गई, इसलिए प्रोग्रेसिव और ऑफ़िस लेंस (लगभग 40 की उम्र के बाद पास के काम के लिए) नहीं देखे गए; इनके लिए उम्र का सवाल ज़रूरी है। |
 | REC_TEXT.astigmatism | The line dial hinted at astigmatism in {eyes}. Spectacle lenses can correct astigmatism; the optometrist measures how much and at which angle. | लाइनों वाले गोले से {eyes} में एस्टिग्मैटिज़्म (सिलेंडर नंबर) का संकेत मिला। चश्मे के लेंस इसे ठीक कर सकते हैं; ऑप्टोमेट्रिस्ट नापेंगे कि यह कितना है और किस कोण पर है। |

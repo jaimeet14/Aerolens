@@ -6,6 +6,9 @@ const eye = (logMAR: number | null, extra: Partial<EyeResult> = {}): EyeResult =
   logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], ...extra,
 });
 const both = (r: number | null, l: number | null): Record<Eye, EyeResult> => ({ right: eye(r), left: eye(l) });
+const OK = 'No concern found today';
+const ADVISE = 'Glasses are likely to help: get an eye test when you can';
+const REFER = 'Please see an optometrist soon';
 
 describe('triage', () => {
   it('any red flag refers and stops', () => {
@@ -24,8 +27,9 @@ describe('triage', () => {
   it('could not read 6/60 refers', () => {
     expect(triage([], both(null, 0.0)).level).toBe('refer');
   });
-  it('two-line difference between eyes refers', () => {
-    expect(triage([], both(0.0, 0.2)).level).toBe('refer');
+  it('two-line difference between eyes advises (no longer refers); three lines refers', () => {
+    expect(triage([], both(0.0, 0.2)).level).toBe('advise');
+    expect(triage([], both(0.0, 0.3)).level).toBe('refer');
   });
   // A dial finding in an eye at 6/6 or better no longer gives advice (see the line-dial block below), so these
   // two use a coarse screen that stopped both eyes at 6/9.5 ("6/9.5 or better"): the dial is the only finding.
@@ -42,7 +46,7 @@ describe('triage', () => {
       { present: true, lines: [1, 3, 5], axisDeg: null },
     ]) {
       expect(triage([], { right: eye(0.2, { limited: true, astigmatism: a }), left: eye(0.2, { limited: true }) })).toEqual({
-        level: 'advise', headline: 'A lens recommendation is likely to help', reasons: [reason], notes: [],
+        level: 'advise', headline: ADVISE, reasons: [reason], notes: [],
       });
     }
   });
@@ -66,7 +70,7 @@ describe('triage reasons use near-vision wording (levels unchanged)', () => {
       'Left eye near vision (50 cm) is below 6/6 (6/9.5); a lens may help.',
     ]);
   });
-  it('worse than 6/18, worse than 6/60 and two lines apart', () => {
+  it('worse than 6/18, worse than 6/60, two lines apart and three lines apart', () => {
     expect(triage([], both(0.6, 0.6)).reasons).toEqual([
       'Right eye near vision (50 cm) is worse than 6/18 (6/24).',
       'Left eye near vision (50 cm) is worse than 6/18 (6/24).',
@@ -74,7 +78,14 @@ describe('triage reasons use near-vision wording (levels unchanged)', () => {
     expect(triage([], both(null, 0.0)).reasons).toEqual([
       'Right eye near vision (50 cm): could not read the largest line (worse than 6/60).',
     ]);
-    expect(triage([], both(0.0, 0.2)).reasons).toContain("The two eyes' near vision (50 cm) differs by two or more lines.");
+    expect(triage([], both(0.0, 0.2)).reasons).toEqual([
+      'Left eye near vision (50 cm) is below 6/6 (6/9.5); a lens may help.',
+      "The two eyes' near vision (50 cm) differs by two lines.",
+    ]);
+    expect(triage([], both(0.0, 0.3)).reasons).toEqual([
+      'Left eye near vision (50 cm) is below 6/6 (6/12); a lens may help.',
+      "The two eyes' near vision (50 cm) differs by three or more lines.",
+    ]);
   });
   it('the distance in the wording follows targetMm; levels do not', () => {
     const t = triage([], both(0.2, 0.2), 400);
@@ -84,6 +95,112 @@ describe('triage reasons use near-vision wording (levels unchanged)', () => {
   it('a screen-limited 6/9.5 is not flagged as below 6/6 (unchanged)', () => {
     const r = { right: eye(0.2, { limited: true }), left: eye(0.2, { limited: true }) };
     expect(triage([], r)).toMatchObject({ level: 'ok', reasons: [] });
+  });
+});
+
+describe('difference between the eyes (15 Nov 2026): two lines advise, three or more refer', () => {
+  // A screen-limited eye above 6/6 adds no reason of its own, so the difference is the only finding.
+  const limited = (logMAR: number) => eye(logMAR, { limited: true });
+  const two = "The two eyes' near vision (50 cm) differs by two lines.";
+  const three = "The two eyes' near vision (50 cm) differs by three or more lines.";
+
+  it('exactly two lines (0.2) is advise, not refer, with the two-lines reason only', () => {
+    for (const r of [{ right: limited(0.2), left: eye(0) }, { right: eye(0), left: limited(0.2) }]) {
+      expect(triage([], r)).toEqual({ level: 'advise', headline: ADVISE, reasons: [two], notes: [] });
+    }
+  });
+  it('three lines (0.3) refers, with the three-lines reason only', () => {
+    for (const r of [{ right: limited(0.3), left: eye(0) }, { right: eye(0), left: limited(0.3) }]) {
+      expect(triage([], r)).toEqual({ level: 'refer', headline: REFER, reasons: [three], notes: [] });
+    }
+    expect(triage([], { right: limited(0.4), left: eye(-0.1) })).toMatchObject({ level: 'refer', reasons: [three] });
+  });
+  it('between two and three lines (0.25) is still advise', () => {
+    expect(triage([], { right: limited(0.25), left: eye(0) })).toEqual({ level: 'advise', headline: ADVISE, reasons: [two], notes: [] });
+  });
+  it('one line apart adds nothing', () => {
+    expect(triage([], { right: limited(0.1), left: eye(0) })).toEqual({ level: 'ok', headline: OK, reasons: [], notes: [] });
+  });
+  it('keeps the 1e-9 tolerance at both thresholds', () => {
+    const level = (d: number) => triage([], { right: limited(d), left: eye(0) }).level;
+    expect(level(0.2 - 1e-10)).toBe('advise');
+    expect(level(0.2 - 1e-6)).toBe('ok');
+    expect(level(0.3 - 1e-10)).toBe('refer');
+    expect(level(0.3 - 1e-6)).toBe('advise');
+    // Floating-point line differences: 0.4 − 0.1 and 0.2 − (−0.1) are a hair above 0.3; 0.5 − 0.3 is 0.2.
+    expect(triage([], both(0.1, 0.4)).reasons).toContain(three);
+    expect(triage([], { right: limited(0.2), left: eye(-0.1) }).reasons).toEqual([three]);
+    expect(triage([], both(0.5, 0.3)).reasons).toContain(two);
+    expect(triage([], both(-0.1, 0.1)).reasons).toContain(two);
+  });
+  it('an eye that could not read the largest line is not compared (it refers on its own)', () => {
+    const t = triage([], both(null, 0.3));
+    expect(t.level).toBe('refer');
+    expect(t.reasons.some((x) => x.startsWith("The two eyes'"))).toBe(false);
+  });
+  it('the other rules are unchanged: worse than 6/18 refers, 6/19 advises, red flags refer first', () => {
+    expect(triage([], both(0.6, 0.6)).level).toBe('refer');
+    expect(triage([], both(0.5, 0.5))).toMatchObject({ level: 'advise', headline: ADVISE });
+    expect(triage([], { right: eye(0.6), left: eye(0.4) })).toMatchObject({ level: 'refer', headline: REFER });
+    expect(triage(['Double vision'], both(0, 0.3))).toEqual({
+      level: 'refer', headline: 'Please see an eye doctor first', reasons: ['You reported: double vision'], notes: [],
+    });
+  });
+
+  // Validation V3 (run 2), V4 and V5 (docs/validation.md) were 'refer' only because of the old two-line rule.
+  describe('regression: V3, V4 and V5 are now advise', () => {
+    const darker = (lines: number[], axisDeg: number | null) => ({ present: true, lines, axisDeg });
+    it('V3 run 2: −3 D myope, R 6/19 / L 6/12, dial even', () => {
+      const t = triage([], { right: eye(0.5, { duochrome: 'green' }), left: eye(0.3, { duochrome: 'green' }) });
+      expect(t).toEqual({
+        level: 'advise',
+        headline: ADVISE,
+        reasons: [
+          'Right eye near vision (50 cm) is below 6/6 (6/19); a lens may help.',
+          'Left eye near vision (50 cm) is below 6/6 (6/12); a lens may help.',
+          two,
+        ],
+        notes: [],
+      });
+    });
+    it('V4: 2 D astigmatism, presbyope, R 6/12 / L 6/19, dial darker in both eyes', () => {
+      const t = triage([], { right: eye(0.3, { astigmatism: darker([1, 2], 45) }), left: eye(0.5, { astigmatism: darker([5, 6], 165) }) });
+      expect(t.level).toBe('advise');
+      expect(t.headline).toBe(ADVISE);
+      expect(t.reasons).toEqual([
+        'Right eye near vision (50 cm) is below 6/6 (6/12); a lens may help.',
+        'Right eye: some dial lines looked darker, which can point to astigmatism.',
+        'Left eye near vision (50 cm) is below 6/6 (6/19); a lens may help.',
+        'Left eye: some dial lines looked darker, which can point to astigmatism.',
+        two,
+      ]);
+    });
+    it('V5: R 6/12 / L 6/19, dial darker in both eyes (right direction unclear)', () => {
+      const t = triage([], { right: eye(0.3, { astigmatism: darker([3, 5], null) }), left: eye(0.5, { astigmatism: darker([3, 4], 105) }) });
+      expect(t).toMatchObject({ level: 'advise', headline: ADVISE });
+      expect(t.reasons).toContain(two);
+      expect(t.reasons).not.toContain(three);
+    });
+  });
+});
+
+describe('headlines (15 Nov 2026), English and Hindi', () => {
+  it('ok, advise and refer', () => {
+    expect(triage([], both(0, 0)).headline).toBe(OK);
+    expect(triage([], both(0, 0), 500, 'hi').headline).toBe('आज की जाँच में कोई परेशानी नहीं मिली');
+    expect(triage([], both(0.1, 0.1)).headline).toBe(ADVISE);
+    expect(triage([], both(0.1, 0.1), 500, 'hi').headline).toBe('चश्मे से मदद मिल सकती है: जब हो सके, आँखों की जाँच करवाएँ');
+    expect(triage([], both(0.6, 0.6)).headline).toBe(REFER);
+    expect(triage([], both(0.6, 0.6), 500, 'hi').headline).toBe('कृपया जल्द ही ऑप्टोमेट्रिस्ट को दिखाएँ');
+  });
+  it('red flags keep their headline in both languages', () => {
+    expect(triage(['Double vision'], both(0, 0)).headline).toBe('Please see an eye doctor first');
+    expect(triage(['Double vision'], both(0, 0), 500, 'hi').headline).toBe('पहले आँखों के डॉक्टर को दिखाएँ');
+  });
+  it('the difference reasons in Hindi', () => {
+    const at = (d: number) => triage([], { right: eye(d, { limited: true }), left: eye(0) }, 500, 'hi');
+    expect(at(0.2)).toMatchObject({ level: 'advise', reasons: ['दोनों आँखों की पास की नज़र (50 cm) में दो लाइनों का फ़र्क है।'] });
+    expect(at(0.3)).toMatchObject({ level: 'refer', reasons: ['दोनों आँखों की पास की नज़र (50 cm) में तीन या ज़्यादा लाइनों का फ़र्क है।'] });
   });
 });
 
@@ -100,7 +217,7 @@ describe('line dial: a note at 6/6 or better, advice otherwise', () => {
     const t = triage([], r);
     expect(t).toEqual({
       level: 'advise',
-      headline: 'A lens recommendation is likely to help',
+      headline: ADVISE,
       reasons: ['Left eye near vision (50 cm) is below 6/6 (6/7.5); a lens may help.', reason('Left')],
       notes: [note('Right')],
     });
@@ -111,7 +228,7 @@ describe('line dial: a note at 6/6 or better, advice otherwise', () => {
   it('an eye at 6/6 with darker lines and the other eye 6/6 and even: ok with one note', () => {
     for (const a of [darker([3], 90), darker([2, 3], 75), darker([1, 3, 5], null)]) {
       expect(triage([], { right: eye(0, { astigmatism: a }), left: eye(0) })).toEqual({
-        level: 'ok', headline: 'No concern found in this screening', reasons: [], notes: [note('Right')],
+        level: 'ok', headline: OK, reasons: [], notes: [note('Right')],
       });
     }
   });
@@ -129,7 +246,7 @@ describe('line dial: a note at 6/6 or better, advice otherwise', () => {
     const r = { right: eye(0.1, { astigmatism: darker([3], 90) }), left: eye(0) };
     expect(triage([], r)).toEqual({
       level: 'advise',
-      headline: 'A lens recommendation is likely to help',
+      headline: ADVISE,
       reasons: ['Right eye near vision (50 cm) is below 6/6 (6/7.5); a lens may help.', reason('Right')],
       notes: [],
     });
@@ -137,7 +254,7 @@ describe('line dial: a note at 6/6 or better, advice otherwise', () => {
   it('a coarse screen limited at 6/9.5 with darker lines: advise as before (not shown to be 6/6)', () => {
     const r = { right: eye(0.2, { limited: true, astigmatism: darker([3], 90) }), left: eye(0.2, { limited: true }) };
     expect(triage([], r)).toEqual({
-      level: 'advise', headline: 'A lens recommendation is likely to help', reasons: [reason('Right')], notes: [],
+      level: 'advise', headline: ADVISE, reasons: [reason('Right')], notes: [],
     });
   });
   it('could not read the largest line, with darker lines: refer, and the dial reason as before', () => {

@@ -14,7 +14,8 @@
  *   - otherwise, when triage advises a lens (level 'advise' or 'refer') -> single vision.
  *   Without an interview the age is unknown, so only single vision is considered, with a note saying so.
  * - Status: triage 'refer' (without red flags) -> 'after-check' (items kept, to discuss after the eye check);
- *   else 'suggest' when a lens is indicated, else 'none'.
+ *   else 'suggest' when a lens is indicated, else 'none'. 'suggest' (every triage 'advise', and a 40+ lens at
+ *   level 'ok') gets a note that an optometrist's eye test is needed before buying lenses: it measures the power.
  * - Duochrome (red-green) per eye: red clearer -> myopic tendency, green clearer -> hyperopic tendency,
  *   equal/unanswered -> nothing. Notes, and a reason on the lens. The test is at 50 cm (near), where green
  *   also looks clearer when near focusing lags, so these are worded as hints.
@@ -127,6 +128,10 @@ export const REC_TEXT = {
   afterCheck: {
     en: 'The screening suggests an eye check by an optometrist first. These options are to discuss after the check, once your prescription is measured.',
     hi: 'इस जाँच के हिसाब से पहले ऑप्टोमेट्रिस्ट से आँखों की जाँच करवाएँ। ये विकल्प उस जाँच के बाद बात करने के लिए हैं, जब आपका चश्मे का नंबर नप जाए।',
+  },
+  eyeTestFirst: {
+    en: 'Get an eye test by an optometrist before buying lenses: only that test measures the lens power you need. These options are to discuss at the test.',
+    hi: 'लेंस खरीदने से पहले ऑप्टोमेट्रिस्ट से आँखों की जाँच करवाएँ: आपके लेंस का नंबर सिर्फ़ उसी जाँच से तय होता है। ये विकल्प उस जाँच के समय बात करने के लिए हैं।',
   },
   noneWithOptions: {
     en: 'No lens is indicated by this screening. The options below match your answers, if you choose glasses anyway (for example for screens or sun); ask the optician which are available.',
@@ -258,6 +263,7 @@ export function belowSixSix(r: EyeResult): boolean {
 
 export const REFER_FIRST_NOTE = REC_TEXT.referFirst.en;
 export const AFTER_CHECK_NOTE = REC_TEXT.afterCheck.en;
+export const EYE_TEST_FIRST_NOTE = REC_TEXT.eyeTestFirst.en;
 export const NONE_WITH_OPTIONS_NOTE = REC_TEXT.noneWithOptions.en;
 export const NO_INTERVIEW_NOTE = REC_TEXT.noInterview.en;
 export const ASTIGMATISM_NOTE = (eyes: Eye[], lang: Lang = 'en') => fmt(REC_TEXT.astigmatism[lang], { eyes: eyesText(eyes, lang) });
@@ -391,6 +397,7 @@ export function recommend(session: Session, triage: Triage, interview: Interview
   /* ---- Notes ---- */
   const notes: string[] = [];
   if (status === 'after-check') notes.push(T.afterCheck[lang]);
+  if (status === 'suggest') notes.push(T.eyeTestFirst[lang]);
   if (status === 'none' && options.length) notes.push(T.noneWithOptions[lang]);
   notes.push(...duochromeNotes(myopic, hyperopic, cm, lang));
   if (astig.length) notes.push(ASTIGMATISM_NOTE(astig, lang));

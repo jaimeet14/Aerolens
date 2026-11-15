@@ -66,10 +66,14 @@ export const TRIAGE_TEXT = {
     en: '{eye} eye: some dial lines looked darker, which can point to astigmatism.',
     hi: '{eye}: गोले की कुछ लाइनें ज़्यादा गहरी दिखीं, जो एस्टिग्मैटिज़्म (सिलेंडर नंबर) का संकेत हो सकता है।',
   },
-  differ: { en: "The two eyes' {near} differs by two or more lines.", hi: 'दोनों आँखों की {near} में दो या ज़्यादा लाइनों का फ़र्क है।' },
-  headRefer: { en: 'Please have an optometrist check your eyes', hi: 'कृपया ऑप्टोमेट्रिस्ट से अपनी आँखों की जाँच करवाएँ' },
-  headAdvise: { en: 'A lens recommendation is likely to help', hi: 'लेंस से आपको मदद मिल सकती है' },
-  headOk: { en: 'No concern found in this screening', hi: 'इस जाँच में कोई परेशानी नहीं मिली' },
+  differ2: { en: "The two eyes' {near} differs by two lines.", hi: 'दोनों आँखों की {near} में दो लाइनों का फ़र्क है।' },
+  differ3: { en: "The two eyes' {near} differs by three or more lines.", hi: 'दोनों आँखों की {near} में तीन या ज़्यादा लाइनों का फ़र्क है।' },
+  headRefer: { en: 'Please see an optometrist soon', hi: 'कृपया जल्द ही ऑप्टोमेट्रिस्ट को दिखाएँ' },
+  headAdvise: {
+    en: 'Glasses are likely to help: get an eye test when you can',
+    hi: 'चश्मे से मदद मिल सकती है: जब हो सके, आँखों की जाँच करवाएँ',
+  },
+  headOk: { en: 'No concern found today', hi: 'आज की जाँच में कोई परेशानी नहीं मिली' },
 } satisfies Record<string, Text>;
 
 export function snellenOf(logMAR: number | null, lang: Lang = 'en'): string {
@@ -99,6 +103,11 @@ export function acuityText(logMAR: number | null, limited: boolean, lang: Lang =
     : `${snellenOf(logMAR, lang)} (logMAR ${logmar})`;
 }
 
+/** PROVISIONAL: a difference between the eyes of this many logMAR (two lines) gives 'advise'... */
+export const DIFF_ADVISE = 0.2;
+/** ...and of this many (three lines or more) gives 'refer'. Compared with a 1e-9 tolerance. */
+export const DIFF_REFER = 0.3;
+
 /**
  * Provisional triage thresholds. A triage aid, never a prescription.
  * These must be reviewed with an optometrist before real-world use.
@@ -109,6 +118,10 @@ export function acuityText(logMAR: number | null, limited: boolean, lang: Lang =
  * "6/6 or better") it is a note only and does not change the level: the dial picks up astigmatism too
  * small to prescribe (validation V2). In any other eye (below 6/6, unknown, or screen-limited at a
  * coarser line) it raises the level to 'advise' with a reason, as before.
+ *
+ * Difference between the eyes (changed 15 Nov 2026): |R − L| ≥ 0.3 logMAR (three lines or more) -> 'refer';
+ * 0.2 ≤ |R − L| < 0.3 (two lines) -> 'advise'. Two lines of uncorrected near acuity is within test-retest noise
+ * and usually means the eyes need different lenses (an optometrist's job), so 'refer' is kept for "see someone soon".
  *
  * `lang` changes only the words of headline, reasons and notes, never the level. The report and history always
  * store the English triage (lang 'en'); the results screen shows a second one in the session language.
@@ -158,9 +171,15 @@ export function triage(flags: string[], results: Record<Eye, EyeResult>, targetM
     }
   }
   const [a, b] = [results.right.logMAR, results.left.logMAR];
-  if (a !== null && b !== null && Math.abs(a - b) >= 0.2 - 1e-9) {
-    up('refer');
-    reasons.push(fmt(T.differ[lang], { near }));
+  if (a !== null && b !== null) {
+    const diff = Math.abs(a - b);
+    if (diff >= DIFF_REFER - 1e-9) {
+      up('refer');
+      reasons.push(fmt(T.differ3[lang], { near }));
+    } else if (diff >= DIFF_ADVISE - 1e-9) {
+      up('advise');
+      reasons.push(fmt(T.differ2[lang], { near }));
+    }
   }
 
   const headline =

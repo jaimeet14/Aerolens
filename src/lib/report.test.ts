@@ -114,7 +114,7 @@ describe('buildReport', () => {
     expect(out.version).toBe(12);
     expect(out.triage).toEqual({
       level: 'ok',
-      headline: 'No concern found in this screening',
+      headline: 'No concern found today',
       reasons: [],
       notes: ['Right eye: some dial lines looked darker — possible mild astigmatism. Mention it at your next eye check.'],
     });

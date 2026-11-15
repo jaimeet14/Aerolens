@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { pickedAnswer } from './dial';
 import { demoFaceSample, FIT_FRAMES, measureFit, type FitCapture } from './face';
 import {
-  AFTER_CHECK_NOTE, ASTIGMATISM_NOTE, belowSixSix, CATEGORY, duochromeTendency, EYE_STRAIN_NOTE, HEADACHE_NOTE,
+  AFTER_CHECK_NOTE, ASTIGMATISM_NOTE, belowSixSix, CATEGORY, duochromeTendency, EYE_STRAIN_NOTE, EYE_TEST_FIRST_NOTE, HEADACHE_NOTE,
   MYOPIA_MANAGEMENT_NOTE, NO_INTERVIEW_NOTE, NONE_WITH_OPTIONS_NOTE, recommend, REFER_FIRST_NOTE, STATUS_TEXT,
   ZEISS_FAMILY, type Interview, type Recommendation,
 } from './recommend';
@@ -109,12 +109,47 @@ describe('after-check: triage refers for other reasons', () => {
     expect(r.notes[0]).toBe(AFTER_CHECK_NOTE);
     expect(AFTER_CHECK_NOTE).toMatch(/after the check/);
   });
-  it('also for a two-line difference between the eyes, and with an interview', () => {
-    const s = sess(eye(0.2), eye(0));
+  it('also for a three-line difference between the eyes, and with an interview', () => {
+    const s = sess(eye(0.3), eye(0));
     expect(triage([], s.results).level).toBe('refer');
     const r = rec(s, ask({ ageBand: '40-59' }));
     expect(r.status).toBe('after-check');
     expect(cats(r)).toEqual([PAL, AR]);
+    expect(r.notes).not.toContain(EYE_TEST_FIRST_NOTE);
+  });
+  it('a two-line difference is advise now (15 Nov 2026): the same items, as suggestions with the eye-test note', () => {
+    const s = sess(eye(0.2), eye(0));
+    expect(triage([], s.results).level).toBe('advise');
+    const r = rec(s, ask({ ageBand: '40-59' }));
+    expect(r.status).toBe('suggest');
+    expect(cats(r)).toEqual([PAL, AR]);
+    expect(r.notes[0]).toBe(EYE_TEST_FIRST_NOTE);
+    expect(r.notes).not.toContain(AFTER_CHECK_NOTE);
+  });
+});
+
+describe('eye test before buying lenses (status suggest)', () => {
+  it('every triage advise gets the note first, with or without an interview', () => {
+    for (const s of [sess(eye(0.2), eye(0.2)), sess(eye(0.5), eye(0.3)), sess(eye(0.2, { limited: true, astigmatism: pickedAnswer([3]) }), eye(0.2, { limited: true }))]) {
+      expect(triage([], s.results).level).toBe('advise');
+      for (const i of [null, ask(), ask({ ageBand: '60+', screenHours: 'gt6' })]) {
+        const r = rec(s, i);
+        expect(r.status).toBe('suggest');
+        expect(r.notes[0]).toBe(EYE_TEST_FIRST_NOTE);
+      }
+    }
+    expect(EYE_TEST_FIRST_NOTE).toMatch(/eye test by an optometrist before buying lenses/);
+  });
+  it('also a 40+ lens at level ok (the power still comes from the eye test)', () => {
+    const r = rec(sess(eye(0), eye(0)), ask({ ageBand: '40-59', complaints: ['small-print'] }));
+    expect(r.status).toBe('suggest');
+    expect(r.notes[0]).toBe(EYE_TEST_FIRST_NOTE);
+  });
+  it('not when no lens is indicated, not after-check and not refer-first', () => {
+    expect(rec(sess(eye(0), eye(0))).notes).not.toContain(EYE_TEST_FIRST_NOTE);
+    expect(rec(sess(eye(0), eye(0)), ask({ nightDriving: true })).notes).not.toContain(EYE_TEST_FIRST_NOTE);
+    expect(rec(sess(eye(0.6), eye(0))).notes).not.toContain(EYE_TEST_FIRST_NOTE);
+    expect(rec({ ...sess(eye(0.2), eye(0.2)), safetyFlags: ['Double vision'] }).notes).toEqual([REFER_FIRST_NOTE]);
   });
 });
 
