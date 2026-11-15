@@ -19,9 +19,10 @@ Comparing AeroLens results with each volunteer's known spectacle prescription an
 | # | Date | Rx R (SPH/CYL×AXIS) | Rx L | AeroLens without glasses (R / L) | AeroLens with glasses (R / L) | Dial without glasses (R / L) | Agrees? |
 |---|---|---|---|---|---|---|---|
 | V1 | 14 Nov 2026 | 0.00 / −0.50 × 80 | 0.00 / −1.00 × 80 | run 2: 6/9.5 / 6/7.5 · run 3: 6/7.5 / 6/7.5 · run 4: 6/7.5 / 6/9.5 | 6/6+ / 6/6+ | run 2: Even / Even · runs 3–4 (thin lines): 3–9 / 3–9 (axis ≈ 90°) | Yes after dial update; runs 3–4 not blind |
-
 | V2 | 14 Nov 2026 | −0.25 / 0.00 | −0.50 / 0.00 | 6/6+ / 6/7.5 | not run | 4–10 (≈120°) / 2–8 & 3–9 (≈75°) | Acuity plausible; **dial false positive** in both eyes |
 | V3 | 14 Nov 2026 | −3.00 / 0.00 | −3.50 / 0.00 | 6/19 / 6/12 (Tumbling E), triage refer | 6/7.5+ / 6/7.5+ (screen limit) | Even / Even | **Detects the −3 D myopia** (refer, R as predicted). L better than predicted; **duochrome green, not red** |
+| V4 | 15 Nov 2026 | −0.25 / −2.00 × 80, ADD +1.75 | 0.00 / −1.75 × 90, ADD +1.75 | 6/12 / 6/19 (Tumbling E), triage refer | not run | 1–7 & 2–8 (≈45°) / 5–11 & 6–12 (≈165°) | **Astigmatism detected in both eyes**, refer and progressive as predicted; **axis wrong** (≈90° expected); L worse than predicted |
+| V5 | 15 Nov 2026 | **not yet given** | **not yet given** | 6/12 / 6/19 (Sloan), triage refer | not run | 3–9 & 5–11 (unclear) / 3–9 & 4–10 (≈105°) | Can't judge without the prescription |
 
 `6/6+` = 6/6 or better (the screen could not draw a smaller line).
 
@@ -168,3 +169,65 @@ Dial: R line 4–10 (axis ≈ 120°), L lines 2–8 & 3–9 (axis ≈ 75°). Duo
 - **Dial even, as predicted** (no cylinder on the prescription).
 - **Distance gating held:** every answer was given at 493–549 mm (within ±10% of 500 mm).
 - Not blind in the strict sense: the prediction was written down before the run, but the volunteer's prescription was already known.
+
+---
+
+## V4 — 15 Nov 2026
+
+**Prescription (bifocal, dated 29 Jun 2024, more than two years old):** R −0.25 / −2.00 × 80 · L 0.00 / −1.75 × 90 · ADD +1.75 both · PD 30 / 30 mm (60 mm total). Strong astigmatism (about 2 D, minus-cyl axis 80–90°, against the rule) with almost no sphere, and presbyopia (ADD +1.75, so age 40+). Spherical equivalent R −1.25 D, L −0.875 D. A contact-lens prescription from the same date has R cyl −1.75 instead of −2.00; the spectacle one is used here.
+
+**Why this volunteer matters:** the first strong astigmatism (V1 had −0.50 / −1.00) and the first presbyope. It checks the dial on a real cylinder, the progressive-lens rule in the lens suggestions, and the duochrome after the 15 Nov colour fix.
+
+**Not blind:** the prescription was known before the run. Don't show the volunteer this prediction or the expected dial line.
+
+### Prediction (written down before the run)
+- **Acuity at 50 cm without glasses:** the cylinder dominates. Its blur is about half the cylinder, roughly 1 D, at best focus; the small sphere and remaining accommodation (ADD +1.75 suggests about 1.5 D) should cover the 50 cm distance. Expect **R 6/12–6/19, L 6/9.5–6/15**, R a little worse.
+- **Dial:** the darker line should be **3–9 in both eyes** (rule of 30: 90° ÷ 30 = 3 o'clock; R axis 80° may also show 2–8). The app's axis estimate should be about **90°** (R maybe 75–90°). Head-tilt control (protocol step 7): tilting the head 90° should move the darker line to 12–6.
+- **Duochrome (new balanced colours):** **equal or green**, not red. At 50 cm the spherical equivalent and accommodation leave little myopic defocus. A weak prediction: this run checks for a new bias, not myopia.
+- **Triage:** **advise or refer**, with astigmatism among the reasons.
+- **Lens suggestions:** answering the age question 40–59 or 60+ should give a **progressive lens** (age 40+ and near acuity below 6/6), with an astigmatism note.
+- **PD:** the app should show about **60 mm** (±2.5 mm), monocular about 30 / 30.
+
+### How to run
+Phone with a dense screen, brightness at maximum, night mode off, the newest version (welcome screen says "✓ Ready offline", no "Update ready"). Answer the glasses question with the usual wear, take the glasses off when asked, answer the interview honestly (age!), do both eyes and the frame-fit step, then copy the JSON from the results screen.
+
+### Run 1: without glasses (15 Nov 2026, 17:59–18:04 local)
+
+**Source:** printed staff summary (session 84f44f3f), not the JSON, so per-answer distances and the device aren't recorded. Tumbling E chart, tested without glasses (usual wear answered "nothing"), interview answered (age 40–59, screens 2–6 h, drives at night, a lot outdoors, tired eyes). Frame fit skipped, so PD is not checked. Whether the phone was already on the 15 Nov duochrome colour fix isn't known.
+
+| | Right | Left |
+|---|---|---|
+| Acuity (50 cm) | **6/12** (logMAR 0.3) | **6/19** (logMAR 0.5) |
+| Dial | darker 1–7 & 2–8 (axis ≈ 45°) | darker 5–11 & 6–12 (axis ≈ 165°) |
+| Duochrome | same | same |
+| Triage | **refer**: both eyes below 6/6, astigmatism hinted in both, eyes differ by two lines | |
+| Lens suggestions | **Progressive lens** (age 40+, near vision below 6/6), plus anti-reflective, night-driving, blue-light and photochromic options; astigmatism note | |
+
+### Findings (run 1), checked against the prediction above
+- **Astigmatism detected in both eyes: yes.** The prescription has −2.00 and −1.75 cylinder, and the dial flagged both eyes. This is the main check, and it passed.
+- **Axis: no.** Expected ≈ 90° in both eyes (3–9 line). The app gave ≈ 45° (R) and ≈ 165° (L). The left eye's 6–12 line is the meridian *perpendicular* to the prescribed axis, which a fan dial shows when the retina lies between the two focal lines: at 50 cm without fogging, this eye's more short-sighted meridian (170°, −2.25 D) focuses at least 0.25 D in front of the retina and the other (80°, −0.25 D) behind it unless he accommodates about 1.75 D, so either line can look darker and it changes with accommodation. The right eye's 1–7 / 2–8 is oblique and matches neither. **Conclusion: the dial shows that astigmatism is present, but its axis estimate isn't reliable** and shouldn't be shown to staff as a measurement.
+- **Acuity: both reduced, as predicted.** Right 6/12 is inside the predicted 6/12–6/19. Left 6/19 is worse than the predicted 6/9.5–6/15, and worse than the right although the cylinders are almost the same (−1.75 vs −2.00). The prescription is from June 2024. A repeat with the letter chart would show whether it's real.
+- **Triage refer and progressive lens: as predicted.** The age question drove the progressive suggestion, and the astigmatism note appeared.
+- **Duochrome "same" in both eyes:** inside the prediction ("equal or green"). No sign of the old green bias, but it's unclear whether this phone already had the fix.
+- **Not checked:** PD (frame fit skipped), head-tilt control on the dial.
+
+---
+
+## V5 — 15 Nov 2026
+
+**Prescription:** not yet given. Without it this run can't be judged; add it here when available.
+
+### Run 1: without glasses (15 Nov 2026, 18:12–18:15 local)
+
+**Source:** printed staff summary (session 52d52332). Letter chart (Sloan), tested without glasses (usual wear answered "nothing"), interview answered (age 40–59, screens 2–6 h, no night driving, some time outdoors; headaches, glare, small print hard to read, tired eyes). Frame fit skipped.
+
+| | Right | Left |
+|---|---|---|
+| Acuity (50 cm) | **6/12** (logMAR 0.3) | **6/19** (logMAR 0.5) |
+| Dial | darker 3–9 & 5–11 (direction unclear) | darker 3–9 & 4–10 (axis ≈ 105°) |
+| Duochrome | same | same |
+| Triage | **refer**: both eyes below 6/6, astigmatism hinted in both, eyes differ by two lines | |
+| Lens suggestions | **Progressive lens** (age 40+, small print hard, near vision below 6/6), anti-reflective, night-driving (glare), blue-light; astigmatism and headache notes | |
+
+- Acuity happens to be identical to V4 (6/12 / 6/19).
+- The right eye's two darker lines (3–9 and 5–11) aren't next to each other, so the app correctly gave no axis.
