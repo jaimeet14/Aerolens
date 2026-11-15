@@ -118,6 +118,8 @@ export const WELCOME = {
   start: { en: 'Start', hi: 'शुरू करें' },
   demo: { en: 'Demo mode: camera disabled, distance fixed at 50 cm.', hi: 'डेमो मोड: कैमरा बंद है, दूरी 50 cm पर तय है।' },
   recent: { en: 'Recent sessions (staff)', hi: 'पिछली जाँचें (स्टाफ़ के लिए)' },
+  offlineDownloading: { en: 'Downloading for offline use…', hi: 'ऑफ़लाइन उपयोग के लिए डाउनलोड हो रहा है…' },
+  offlineReady: { en: '✓ Ready offline', hi: '✓ ऑफ़लाइन तैयार' },
 } satisfies Record<string, Text>;
 
 export const SAFETY = {

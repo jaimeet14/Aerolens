@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CAMERA_DENIED, DEMO, type Iris } from '../hooks/useIrisDistance';
+import { useOfflineReady } from '../hooks/useOfflineReady';
 import { screenLimit } from '../lib/acuity';
 import { CALIBRATE_MAX_CM, CALIBRATE_MIN_CM, parseCalibrationDistanceMm, startBlocker } from '../lib/calibration';
 import { testedWithFrom, type ContactLenses } from '../lib/correction';
@@ -17,6 +18,7 @@ export function Welcome({ lang, onLang, onStart, onRecent }: {
   lang: Lang; onLang: (l: Lang) => void; onStart: () => void; onRecent: () => void;
 }) {
   const T = WELCOME;
+  const offline = useOfflineReady();
   return (
     <div className="card">
       <fieldset>
@@ -47,6 +49,10 @@ export function Welcome({ lang, onLang, onStart, onRecent }: {
       <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">{T.disclaimer[lang]}</p>
       <button className="btn btn-primary mt-5 w-full" onClick={onStart}>{T.start[lang]}</button>
       {DEMO && <p className="mt-3 text-center text-xs text-subtle">{T.demo[lang]}</p>}
+      {/* Offline readiness of the service worker; the live region stays mounted so the change to "ready" is announced. */}
+      <p className={`text-center text-xs text-subtle ${offline === 'hidden' ? 'hidden' : 'mt-2'}`} aria-live="polite">
+        {offline === 'downloading' ? T.offlineDownloading[lang] : offline === 'ready' ? T.offlineReady[lang] : ''}
+      </p>
       <button className="mt-4 block w-full text-center text-sm font-medium text-brand underline-offset-4 hover:underline" onClick={onRecent}>
         {T.recent[lang]}
       </button>
