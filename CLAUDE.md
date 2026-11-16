@@ -79,6 +79,6 @@ Not built: Phase 3 voice input for the interview (spoken answers), Odia text (ad
 5. ~~Manifest exists but no service worker~~ — fixed 15 Nov 2026: `vite-plugin-pwa` service worker (autoUpdate, no forced reload) precaches the app shell and every `public/mediapipe` file (~16.5 MB), with an `index.html` fallback so `/?demo=1` works offline; `public/manifest.webmanifest` stays the only manifest; `vercel.json` serves `sw.js` with `max-age=0`.
 6. ~~Card-scale slider on 360-px phones~~ — fixed 12 Nov: full-bleed box (`scaleBoxMaxPx`), measured rendered width, inset ring.
 7. ~~Not deployed~~ — deployed 12 Nov 2026 to Vercel: https://aerolens-navy.vercel.app (redeploy: `npx vercel@latest deploy --prod --yes`).
-8. Not yet a git repo / on GitHub — the progress email needs the repo link.
+8. ~~Not yet a git repo / on GitHub~~ — public at https://github.com/jaimeet14/Aerolens (branch `main`, up to date 16 Nov 2026). Committing does not deploy: run the Vercel command in item 7 to update the live app.
 
 Suggested priority before 25 Nov: deploy → Phase 4 validation → Phase 2 PD → minimal rule-based recommendation (Phase 3 without voice if time is short) → 6-slide deck.
