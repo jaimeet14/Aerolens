@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { pickedAnswer } from './dial';
 import { demoFaceSample, FIT_FRAMES, measureFit } from './face';
+import { clearFarPoint, measuredFarPoint } from './farpoint';
 import { recommend, REFER_FIRST_NOTE, type Interview } from './recommend';
 import { buildReport, distanceSummary } from './report';
 import { triage } from './triage';
@@ -8,7 +9,7 @@ import type { EyeResult, Session } from './types';
 
 const eye = (distances: (number | null)[]): EyeResult => ({
   logMAR: 0.2, limited: false, astigmatism: null, duochrome: null,
-  acuityAnswers: distances.map((d, i) => ({ logMAR: 0.5 - i * 0.1, ok: true, distanceMm: d })),
+  acuityAnswers: distances.map((d, i) => ({ logMAR: 0.5 - i * 0.1, ok: true, distanceMm: d })), farPoint: null,
 });
 
 describe('distanceSummary', () => {
@@ -30,7 +31,7 @@ describe('buildReport', () => {
   const device = { userAgent: 'test', screenCss: [393, 852] as [number, number], viewportCss: [393, 760] as [number, number], dpr: 2 };
   const r = buildReport(session, { level: 'ok' }, device, '2026-11-12T00:00:00.000Z');
   it('keeps the session and adds validation fields', () => {
-    expect(r.version).toBe(12);
+    expect(r.version).toBe(13);
     expect(r.correction).toBe('glasses');
     expect(r.focalCalibrated).toBe(true);
     expect(r.device.screenCss).toEqual([393, 852]);
@@ -38,7 +39,7 @@ describe('buildReport', () => {
   });
   it('records the usual wear and what the test was done with (v8), in the exported JSON', () => {
     // A glasses wearer is tested without them: correction is the usual wear, testedWith is 'none'.
-    expect(JSON.parse(JSON.stringify(r))).toMatchObject({ version: 12, correction: 'glasses', testedWith: 'none' });
+    expect(JSON.parse(JSON.stringify(r))).toMatchObject({ version: 13, correction: 'glasses', testedWith: 'none' });
     // A contact lens wearer who kept them in.
     const kept = JSON.parse(JSON.stringify(buildReport({ ...session, correction: 'contacts', testedWith: 'contacts' }, null, device, '')));
     expect(kept).toMatchObject({ correction: 'contacts', testedWith: 'contacts' });
@@ -65,7 +66,7 @@ describe('buildReport', () => {
     ];
     const s: Session = { ...session, chart: 'C', lang: 'hi', results: { ...session.results, right: { ...session.results.right, acuityAnswers: answers } } };
     const out = JSON.parse(JSON.stringify(buildReport(s, null, device, '')));
-    expect(out.version).toBe(12);
+    expect(out.version).toBe(13);
     expect(out.chart).toBe('C');
     expect(out.lang).toBe('hi');
     expect(out.results.right.acuityAnswers).toEqual(answers);
@@ -77,7 +78,7 @@ describe('buildReport', () => {
     expect(r.scaleSource).toBe('card');
     expect(r.scaleSavedAt).toBeNull();
     const saved = buildReport({ ...session, scaleSource: 'saved', scaleSavedAt: '2026-11-10T09:30:00.000Z' }, null, device, '');
-    expect(JSON.parse(JSON.stringify(saved))).toMatchObject({ version: 12, scaleSource: 'saved', scaleSavedAt: '2026-11-10T09:30:00.000Z', pxPerMm: 5.85, dpr: 2 });
+    expect(JSON.parse(JSON.stringify(saved))).toMatchObject({ version: 13, scaleSource: 'saved', scaleSavedAt: '2026-11-10T09:30:00.000Z', pxPerMm: 5.85, dpr: 2 });
   });
   const withDial = (right: EyeResult['astigmatism'], left: EyeResult['astigmatism']): Session => ({
     ...session, results: { right: { ...session.results.right, astigmatism: right }, left: { ...session.results.left, astigmatism: left } },
@@ -85,14 +86,14 @@ describe('buildReport', () => {
   it('records a "Not sure" line-dial answer distinctly, in the exported JSON', () => {
     const s = withDial({ present: false, lines: [], axisDeg: null, unsure: true }, { present: false, lines: [], axisDeg: null });
     const out = JSON.parse(JSON.stringify(buildReport(s, null, device, '')));
-    expect(out.version).toBe(12);
+    expect(out.version).toBe(13);
     expect(out.results.right.astigmatism).toEqual({ present: false, lines: [], axisDeg: null, unsure: true });
     expect(out.results.left.astigmatism).toEqual({ present: false, lines: [], axisDeg: null });
   });
   it('keeps the selected dial lines and the axis estimate, in the exported JSON (v6+, no single hour)', () => {
     const s = withDial(pickedAnswer([3]), pickedAnswer([3, 2]));
     const out = JSON.parse(JSON.stringify(buildReport(s, null, device, '')));
-    expect(out.version).toBe(12);
+    expect(out.version).toBe(13);
     expect(out.results.right.astigmatism).toEqual({ present: true, lines: [3], axisDeg: 90 });
     expect(out.results.left.astigmatism).toEqual({ present: true, lines: [2, 3], axisDeg: 75 });
     expect(out.results.right.astigmatism).not.toHaveProperty('hour');
@@ -111,7 +112,7 @@ describe('buildReport', () => {
       },
     };
     const out = JSON.parse(JSON.stringify(buildReport(s, triage(s.safetyFlags, s.results, s.targetMm), device, '')));
-    expect(out.version).toBe(12);
+    expect(out.version).toBe(13);
     expect(out.triage).toEqual({
       level: 'ok',
       headline: 'No concern found today',
@@ -140,7 +141,7 @@ describe('buildReport', () => {
     const m = measureFit(Array.from({ length: FIT_FRAMES }, (_, i) => demoFaceSample(i)));
     if (!m.ok) throw new Error(m.message);
     const out = JSON.parse(JSON.stringify(buildReport({ ...session, fit: m.fit }, null, device, '')));
-    expect(out.version).toBe(12);
+    expect(out.version).toBe(13);
     expect(out.fit).toEqual(m.fit);
     expect(out.fit).toMatchObject({
       status: 'captured',
@@ -172,7 +173,7 @@ describe('buildReport', () => {
     const t = triage(s.safetyFlags, s.results, s.targetMm);
     const rec = recommend(s, t, null);
     const out = JSON.parse(JSON.stringify(buildReport(s, t, device, '', rec)));
-    expect(out.version).toBe(12);
+    expect(out.version).toBe(13);
     expect(out.recommendation).toEqual(rec);
     expect(out.recommendation.status).toBe('suggest');
     expect(out.recommendation.items.map((i: { kind: string; category: string; zeissFamily: string | null }) => [i.kind, i.category, i.zeissFamily])).toEqual([
@@ -209,7 +210,7 @@ describe('buildReport', () => {
     const t = triage(s.safetyFlags, s.results, s.targetMm);
     const rec = recommend(s, t, s.interview);
     const out = JSON.parse(JSON.stringify(buildReport(s, t, device, '', rec)));
-    expect(out.version).toBe(12);
+    expect(out.version).toBe(13);
     expect(out.interview).toEqual(interview);
     expect(out.lang).toBe('hi');
     expect(out.recommendation.items.map((i: { category: string }) => i.category)).toEqual([
@@ -224,5 +225,31 @@ describe('buildReport', () => {
     const answers = [{ logMAR: 0.5, ok: false, distanceMm: 500, shown: 'K' as const, picked: 'R' as const }];
     const s = { ...session, results: { ...session.results, right: { ...session.results.right, acuityAnswers: answers } } };
     expect(buildReport(s, null, device, '').results.right.acuityAnswers[0]).toMatchObject({ shown: 'K', picked: 'R' });
+  });
+  it('exports the far point per eye (v13): the block, or null when skipped; everything else as in v12', () => {
+    const right = measuredFarPoint([40, 55, 42]);
+    const left = clearFarPoint(68);
+    const s: Session = { ...session, testedWith: 'contacts', correction: 'contacts', results: { right: { ...session.results.right, farPoint: right }, left: session.results.left } };
+    const t = triage(s.safetyFlags, s.results, s.targetMm);
+    const out = JSON.parse(JSON.stringify(buildReport(s, t, device, '')));
+    expect(out.version).toBe(13);
+    expect(out.results.right.farPoint).toEqual({ trialsCm: [40, 55, 42], medianCm: 42, outcome: 'measured', estimateD: -2.25, rangeD: [-2.75, -1.75] });
+    expect(out.results.left).toHaveProperty('farPoint', null);
+    expect(JSON.parse(JSON.stringify(buildReport({ ...s, results: { ...s.results, left: { ...s.results.left, farPoint: left } } }, null, device, ''))).results.left.farPoint)
+      .toEqual({ trialsCm: [68], medianCm: 68, outcome: 'beyond', estimateD: null, rangeD: null });
+    // The triage reason for the measured eye is exported with the report; testedWith says it was with contact lenses in.
+    expect(out.triage.reasons).toContain(
+      'Right eye: the letters blurred beyond 42 cm, which suggests short sight of about −2.25 D (a rough estimate, not a prescription). The near vision (50 cm) test can miss this.',
+    );
+    expect(out).toMatchObject({ testedWith: 'contacts', chart: 'letters', fit: null, interview: null, recommendation: null, distance: { right: { n: 2 } } });
+    expect(Object.keys(out.results.right)).toEqual(['logMAR', 'limited', 'astigmatism', 'duochrome', 'acuityAnswers', 'farPoint']);
+  });
+  it('always exports farPoint in each eye (v13), also for a session object from before the field', () => {
+    const { farPoint: _f, ...old } = session.results.right;
+    void _f;
+    const s = { ...session, results: { right: old, left: old } } as unknown as Session;
+    const out = JSON.parse(JSON.stringify(buildReport(s, null, device, '')));
+    expect(out.results.right).toHaveProperty('farPoint', null);
+    expect(out.results.left).toHaveProperty('farPoint', null);
   });
 });

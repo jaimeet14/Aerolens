@@ -4,8 +4,10 @@ For a native Hindi speaker to check. Each table lists one screen: the key (where
 source, and the Hindi shown when the customer picks हिन्दी on the welcome screen. Aim: simple everyday Hindi that a small-town
 customer at an optical counter understands, in the same style as the interview text (section 4), which was already approved.
 
-384 strings in 17 sections. Generated from the string tables on 15 Nov 2026 (triage headlines, the two difference
-reasons and REC_TEXT.eyeTestFirst changed later the same day); if you change a Hindi string,
+413 strings in 18 sections. Generated from the string tables on 15 Nov 2026 (triage headlines, the two difference
+reasons and REC_TEXT.eyeTestFirst changed later the same day; the three interview sound buttons UI.playAgain, UI.soundOff and
+UI.soundOn added later the same day, not yet checked; the 26 far-point strings in section 18 added 16 Nov 2026, not yet
+checked); if you change a Hindi string,
 change it in the file named under the section title (the key says which entry) and update this file.
 
 ## How to read the tables
@@ -21,7 +23,7 @@ change it in the file named under the section title (the key says which entry) a
 
 ## Kept in English (Latin script) on purpose
 
-- Numbers and units: 6/6, 6/9.5, logMAR, cm, mm, °, ×, %.
+- Numbers and units: 6/6, 6/9.5, logMAR, cm, mm, D (dioptre, as in −2.25 D), °, ×, %.
 - PD (optical shops say PD; the first mention explains it as पुतलियों के बीच की दूरी).
 - The chart letters themselves: E and the Landolt C (shown as छल्ला (Landolt C)), and Sloan (English letters chart, only offered in English).
 - ZEISS lens family names (e.g. ZEISS SmartLife Progressive): product names, never translated.
@@ -42,6 +44,9 @@ change it in the file named under the section title (the key says which entry) a
 | red-green test | लाल-हरा टेस्ट | |
 | short-sighted (myopic) / long-sighted (hyperopic) tendency | दूर का कम दिखने (मायोपिया) / पास का कम दिखने (हाइपरोपिया) का झुकाव | |
 | refraction (optometrist's) | ऑप्टोमेट्रिस्ट की नंबर-जाँच | |
+| far point (where the letters start to blur) | धुंधला होने की दूरी | new, 16 Nov 2026 |
+| short sight (myopia) | दूर का कम दिखना (मायोपिया) | as in the red-green notes |
+| rough estimate | मोटा अंदाज़ा | |
 | calibrate | सेट करना | |
 | Landolt C ring, its gap | छल्ला, खुला हिस्सा | |
 | cheekbone width | गालों की चौड़ाई | |
@@ -112,12 +117,18 @@ Code: src/lib/i18n.ts REFERRAL
 
 Code: src/lib/interview.ts
 
+New, to check: UI.playAgain, UI.soundOff, UI.soundOn (the read-aloud buttons, shown only when a recorded clip exists;
+the sound buttons name the action). The recorded Hindi clips read the texts below word for word (docs/recording-script.md).
+
 | Key | English | Hindi |
 |---|---|---|
 | UI.intro | A few quick questions about your daily routine. They help suggest lens options to discuss with the optometrist. This is a screening aid, not a prescription. | आपकी रोज़ की आदतों के बारे में कुछ छोटे सवाल। इनसे ऑप्टोमेट्रिस्ट से बात करने के लिए लेंस के विकल्प सुझाए जाते हैं। यह सिर्फ़ एक शुरुआती जाँच है, चश्मे का नंबर (पर्चा) नहीं। |
 | UI.back | Back | पीछे |
 | UI.next | Next | आगे |
 | UI.skip | Skip questions | सवाल छोड़ें |
+| UI.playAgain | Play again | फिर से सुनें |
+| UI.soundOff | Sound off | आवाज़ बंद करें |
+| UI.soundOn | Sound on | आवाज़ चालू करें |
 | q1 | How old are you? | आपकी उम्र कितनी है? |
 | q1.under18 | Under 18 | 18 से कम |
 | q1.18-39 | 18 to 39 | 18 से 39 |
@@ -550,3 +561,39 @@ Code: src/lib/i18n.ts KIND_NAME; src/lib/recommend.ts STATUS_TEXTS, CATEGORY_TEX
 | EYES_TEXT.right | the right eye | दाईं आँख |
 | EYES_TEXT.left | the left eye | बाईं आँख |
 | EYES_TEXT.both | both eyes | दोनों आँखों |
+
+## 18. Far point (after the red-green test of each eye; results and triage)
+
+Code: src/lib/i18n.ts FAR, RESULTS.farPoint, RESULTS.farPointContacts; src/lib/farpoint.ts FARPOINT_TEXT; src/lib/triage.ts TRIAGE_TEXT.farPoint
+
+New 16 Nov 2026, not yet checked. In FARPOINT_TEXT `{cm}` is the distance (42 or 42.5) and `{d}`, `{lo}`, `{hi}` are powers such as
+−2.25; in FAR.step2 `{cm}` is 20. In TRIAGE_TEXT.farPoint `{eye}` and `{near}` are as in section 15.
+
+| Key | English | Hindi |
+|---|---|---|
+| FAR.header | far point | धुंधला होने की दूरी |
+| FAR.title | How far do the letters stay clear? | अक्षर कितनी दूर तक साफ़ दिखते हैं? |
+| FAR.step1 | Keep the other eye covered and your glasses off (contact lenses may stay in). | दूसरी आँख ढकी रखें और चश्मा न पहनें (कॉन्टैक्ट लेंस लगे रह सकते हैं)। |
+| FAR.step2 | Start with the phone close, about {cm} cm from your eye, where the letters are clear. | शुरू में फ़ोन को पास रखें, आँख से लगभग {cm} cm दूर, जहाँ अक्षर साफ़ दिखें। |
+| FAR.step3 | Slowly move the phone away from your face. | फ़ोन को धीरे-धीरे चेहरे से दूर ले जाएँ। |
+| FAR.step4 | Tap **Blurred now** as soon as the letters start to blur. | जैसे ही अक्षर धुंधले होने लगें, **अब धुंधला है** दबाएँ। |
+| FAR.distance | Distance: {distance} | दूरी: {distance} |
+| FAR.noFace | no face | चेहरा नहीं दिखा |
+| FAR.trial | Try {n} of {total} | कोशिश {n} ({total} में से) |
+| FAR.recorded | Recorded: {list} | दर्ज हुआ: {list} |
+| FAR.again | Bring the phone close again, then slowly move it away. | फ़ोन को फिर से पास लाएँ, फिर धीरे-धीरे दूर ले जाएँ। |
+| FAR.blurred | Blurred now | अब धुंधला है |
+| FAR.stillClear | Still clear at arm's length | हाथ भर की दूरी पर भी साफ़ है |
+| FAR.alreadyBlurred | Already blurred | पहले से धुंधला है |
+| FAR.skip | Skip this step | यह कदम छोड़ें |
+| FAR.needFace | The camera could not see your face, so nothing was recorded. Look at the screen and tap again. | कैमरे को आपका चेहरा नहीं दिखा, इसलिए कुछ दर्ज नहीं हुआ। स्क्रीन की ओर देखें और फिर से दबाएँ। |
+| FAR.coarse | This screen cannot draw these small letters sharply, so this result is less reliable. | यह स्क्रीन इन छोटे अक्षरों को ठीक से नहीं बना सकती, इसलिए यह नतीजा कम भरोसेमंद है। |
+| FAR.letters | A line of small test letters | जाँच के छोटे अक्षरों की एक लाइन |
+| FAR.note | This gives a rough estimate of short sight. It is not a prescription. | इससे दूर के कम दिखने (मायोपिया) का मोटा अंदाज़ा मिलता है। यह चश्मे का नंबर नहीं है। |
+| RESULTS.farPoint | Far point | धुंधला होने की दूरी |
+| RESULTS.farPointContacts | Far point, with contact lenses in | धुंधला होने की दूरी, कॉन्टैक्ट लेंस लगाकर |
+| FARPOINT_TEXT.measured | {cm} cm → estimated about {d} D ({lo} to {hi}), not a prescription | {cm} cm → अंदाज़न लगभग {d} D ({lo} से {hi}), चश्मे का नंबर नहीं |
+| FARPOINT_TEXT.beyond | Still clear at {cm} cm: any short sight is weaker than about {d} D, not a prescription | {cm} cm पर भी साफ़: दूर का कम दिखना (मायोपिया) हो भी, तो लगभग {d} D से कम है; चश्मे का नंबर नहीं |
+| FARPOINT_TEXT.blurred | Blurred even at {cm} cm: possibly stronger than about {d} D, or the phone was too close to focus; not a prescription | {cm} cm पर भी धुंधला: शायद लगभग {d} D से ज़्यादा, या फ़ोन फ़ोकस के लिए बहुत पास था; चश्मे का नंबर नहीं |
+| FARPOINT_TEXT.skipped | Skipped | छोड़ दिया गया |
+| TRIAGE_TEXT.farPoint | {eye} eye: the letters blurred beyond {cm} cm, which suggests short sight of about {d} D (a rough estimate, not a prescription). The {near} test can miss this. | {eye}: {cm} cm से आगे अक्षर धुंधले हो गए, यानी लगभग {d} D का मायोपिया (दूर का कम दिखना) हो सकता है (मोटा अंदाज़ा, चश्मे का नंबर नहीं)। {near} की जाँच में यह छूट सकता है। |

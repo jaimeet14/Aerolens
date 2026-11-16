@@ -65,13 +65,31 @@ export function distanceSummary(answers: AcuityAnswer[]): DistanceSummary | null
  *     (null only in older reports), also when the questions were skipped. All report text (triage, recommendation,
  *     fit sentences, safetyFlags) stays English in every language, so a Hindi session's report equals the same
  *     session's English report except for lang itself.
+ * v13: adds results[eye].farPoint (far-point estimate of short sight after the red-green test, see lib/farpoint.ts),
+ *     always present in each eye (16 Nov 2026):
+ *     - null: the step was skipped;
+ *     - { trialsCm, medianCm, outcome, estimateD, rangeD }: trialsCm = eye-to-phone distances in whole cm (camera iris
+ *       distance), one per "Blurred now" tap (1 to 3), or the single distance of a "Still clear at arm's length" or
+ *       "Already blurred" tap; medianCm = their median; outcome 'measured' | 'beyond' (still clear at arm's length, or
+ *       median ≥ 65 cm: short sight, if any, weaker than about −1.5 D) | 'already-blurred' (blurred even at medianCm,
+ *       the closest distance tried: possibly stronger than about −5 D at 20 cm, or too close to focus);
+ *       estimateD = about −100 / medianCm in quarter dioptres rounded toward the weaker power, rangeD =
+ *       [estimateD − 0.5, estimateD + 0.5], both only for 'measured' (null otherwise). The letters are a fixed physical
+ *       size (0.1 logMAR at 65 cm, about 1.19 mm). With testedWith 'contacts' it was measured with contact lenses in.
+ *     PROVISIONAL, never a prescription. triage: a 'measured' estimate of −1.5 D or stronger in either eye now raises
+ *     'ok' to 'advise' with a reason; nothing else in triage changed. Every other field is unchanged from v12.
  */
 export function buildReport<T>(session: Session, triage: T, device: Device, at: string, recommendation: Recommendation | null = null) {
+  const eyes = Object.keys(session.results) as Eye[];
   const distance = Object.fromEntries(
-    (Object.keys(session.results) as Eye[]).map((e) => [e, distanceSummary(session.results[e].acuityAnswers)]),
+    eyes.map((e) => [e, distanceSummary(session.results[e].acuityAnswers)]),
   ) as Record<Eye, DistanceSummary | null>;
+  // Every eye exports farPoint, null when skipped (also for a session object from before the field).
+  const results = Object.fromEntries(
+    eyes.map((e) => [e, { ...session.results[e], farPoint: session.results[e].farPoint ?? null }]),
+  ) as Session['results'];
   return {
-    version: 12, at, ...session, fit: session.fit ?? null, interview: session.interview ?? null, lang: session.lang ?? null,
+    version: 13, at, ...session, results, fit: session.fit ?? null, interview: session.interview ?? null, lang: session.lang ?? null,
     distance, device, triage, recommendation,
   };
 }

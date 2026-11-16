@@ -5,7 +5,7 @@ import { Progress } from './components/Progress';
 import { Results } from './components/Results';
 import { StaffList, StaffSummary } from './components/Staff';
 import { CameraStep, Referral, ScaleStep, Safety, Welcome } from './components/Stages';
-import { AcuityTest, AstigmatismTest, CoverPrompt, DuochromeTest } from './components/Tests';
+import { AcuityTest, AstigmatismTest, CoverPrompt, DuochromeTest, FarPointTest } from './components/Tests';
 import { DEMO, useIrisDistance } from './hooks/useIrisDistance';
 import { presetChart } from './lib/acuity';
 import type { FitRecord } from './lib/face';
@@ -20,7 +20,7 @@ import type { Correction, Eye, EyeResult, Session, TestedWith } from './lib/type
 
 const TARGET_MM = 500;
 const EYES: Eye[] = ['right', 'left'];
-const blank = (): EyeResult => ({ logMAR: null, limited: false, astigmatism: null, duochrome: null, acuityAnswers: [] });
+const blank = (): EyeResult => ({ logMAR: null, limited: false, astigmatism: null, duochrome: null, acuityAnswers: [], farPoint: null });
 /** A fresh session. The language carries over from the last one (Start over, New test); welcome can change it. */
 const newSession = (lang: Lang = 'en'): Session => ({
   safetyFlags: [], correction: null, testedWith: null, pxPerMm: 0, dpr: 1, scaleSource: 'card', scaleSavedAt: null, targetMm: TARGET_MM,
@@ -56,7 +56,8 @@ function loadScale(): SavedScale | null {
 }
 
 type Stage = 'welcome' | 'safety' | 'referral' | 'interview' | 'scale' | 'camera' | 'eye' | 'fit' | 'results' | 'staff' | 'history';
-type Sub = 'cover' | 'acuity' | 'astig' | 'duo';
+/** Per-eye sub-steps, in order; 'far' (far-point estimate) is the only one not gated at the 50 cm target distance. */
+type Sub = 'cover' | 'acuity' | 'astig' | 'duo' | 'far';
 
 export default function App() {
   const [stage, setStage] = useState<Stage>('welcome');
@@ -173,8 +174,12 @@ export default function App() {
           )}
           {sub === 'duo' && (
             <DuochromeTest key={eye} lang={lang} eye={eye} iris={iris} geo={geo} acuity={session.results[eye].logMAR}
-              onDone={(d) => {
-                patch(eye, { duochrome: d });
+              onDone={(d) => { patch(eye, { duochrome: d }); setSub('far'); }} />
+          )}
+          {sub === 'far' && (
+            <FarPointTest key={eye} lang={lang} eye={eye} chart={session.chart ?? 'E'} iris={iris} pxPerMm={session.pxPerMm}
+              onDone={(fp) => {
+                patch(eye, { farPoint: fp });
                 if (eyeIdx === 0) { setEyeIdx(1); setSub('cover'); } else setStage('fit');
               }} />
           )}

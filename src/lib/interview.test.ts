@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import recordingScript from '../../docs/recording-script.md?raw';
 import {
-  answer, audioPath, buildInterview, isAnswered, isSelected, LANG_NAME, LANGS, NONE, QUESTIONS, questionCount, toggleComplaint, UI,
+  answer, audioPath, buildInterview, CLIP_IDS, clipScript, sentence, isAnswered, isSelected, LANG_NAME, LANGS, NONE, QUESTIONS, questionCount, toggleComplaint, UI,
   type Answers, type Question,
 } from './interview';
 
@@ -43,9 +44,10 @@ describe('question set', () => {
   it('only the complaints question is multi-select', () => {
     expect(QUESTIONS.filter((x) => x.kind === 'multi').map((x) => x.id)).toEqual(['q5']);
   });
-  it('names future audio clips by language and id, and counts questions in both languages', () => {
-    expect(audioPath('en', 'q1')).toBe('/audio/en/q1');
-    expect(audioPath('hi', 'q5')).toBe('/audio/hi/q5');
+  it('names audio clips by language and id as mp3, and counts questions in both languages', () => {
+    expect(audioPath('en', 'q1')).toBe('/audio/en/q1.mp3');
+    expect(audioPath('hi', 'q5')).toBe('/audio/hi/q5.mp3');
+    expect(audioPath('hi', 'intro')).toBe('/audio/hi/intro.mp3');
     expect(questionCount('en', 2)).toBe('Question 2 of 5');
     expect(questionCount('hi', 2)).toBe('सवाल 2 / 5');
   });
@@ -138,5 +140,58 @@ describe('buildInterview', () => {
   });
   it('deduplicates complaints and puts them in option order', () => {
     expect(buildInterview({ ...full, complaints: ['eye-strain', 'headache', 'eye-strain'] })?.complaints).toEqual(['headache', 'eye-strain']);
+  });
+});
+
+describe('read-aloud clips', () => {
+  it('has the intro clip and one clip per question, with the stable question ids', () => {
+    expect(CLIP_IDS).toEqual(['intro', ...QUESTIONS.map((x) => x.id)]);
+  });
+  it('adds "." (English) or "।" (Hindi) only when the text has no ending punctuation', () => {
+    expect(sentence('en', 'Yes')).toBe('Yes.');
+    expect(sentence('en', 'How old are you?')).toBe('How old are you?');
+    expect(sentence('en', 'Tap all that apply.')).toBe('Tap all that apply.');
+    expect(sentence('en', 'Wow!')).toBe('Wow!');
+    expect(sentence('en', 'Very little (mostly indoors)')).toBe('Very little (mostly indoors).');
+    expect(sentence('hi', 'हाँ')).toBe('हाँ।');
+    expect(sentence('hi', 'सब चुनें।')).toBe('सब चुनें।');
+    expect(sentence('hi', 'आपकी उम्र कितनी है?')).toBe('आपकी उम्र कितनी है?');
+    expect(sentence('en', '  No  ')).toBe('No.');
+  });
+  it('reads a question and then each option, each as its own sentence', () => {
+    expect(clipScript('en', 'q1')).toBe('How old are you? Under 18. 18 to 39. 40 to 59. 60 or over.');
+    expect(clipScript('hi', 'q3')).toBe('क्या आप रात में गाड़ी चलाते हैं (कार, स्कूटर, बाइक)? हाँ। नहीं।');
+    expect(clipScript('en', 'q5')).toBe(
+      'Do any of these bother you? Tap all that apply. Headaches. Glare from lights (headlights, sun). '
+        + 'Small print is hard to read. Tired or strained eyes. None of these.',
+    );
+  });
+  it('reads the intro text for the intro clip', () => {
+    expect(clipScript('en', 'intro')).toBe(UI.intro.en);
+    expect(clipScript('hi', 'intro')).toBe(UI.intro.hi);
+  });
+  it('contains every question and option text of the clip, in both languages', () => {
+    for (const x of QUESTIONS) {
+      for (const lang of LANGS) {
+        const s = clipScript(lang, x.id);
+        expect(s.startsWith(x.text[lang])).toBe(true);
+        for (const o of x.options) expect(s).toContain(o.text[lang]);
+      }
+    }
+  });
+});
+
+describe('docs/recording-script.md', () => {
+  const doc = recordingScript.replace(/\r\n/g, '\n');
+  const fence = '`'.repeat(3);
+  it('lists every clip with its file name and the exact words of clipScript', () => {
+    for (const lang of LANGS) {
+      for (const id of CLIP_IDS) {
+        expect(doc).toContain(`\`public/audio/${lang}/${id}.mp3\`\n\n${fence}text\n${clipScript(lang, id)}\n${fence}`);
+      }
+    }
+  });
+  it("has no clip texts other than the app's clips", () => {
+    expect(doc.split(`${fence}text\n`).length - 1).toBe(LANGS.length * CLIP_IDS.length);
   });
 });

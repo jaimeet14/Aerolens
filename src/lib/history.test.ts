@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { pickedAnswer } from './dial';
 import { demoFaceSample, FIT_FRAMES, measureFit } from './face';
+import { blurredFarPoint, clearFarPoint, measuredFarPoint } from './farpoint';
 import {
   addToHistory, CHART_TEXT, clearHistory, deleteFromHistory, HISTORY_KEY, HISTORY_MAX, HISTORY_REPORT_VERSIONS, historyTime, interviewRows,
   isHistoryEntry, loadHistory, newSessionId, parseHistory, sessionEntry, type HistoryEntry,
@@ -35,7 +36,7 @@ function quotaStore(limit: number): StoreLike & { map: Map<string, string> } {
 
 const eye = (logMAR: number | null, extra: Partial<EyeResult> = {}): EyeResult => ({
   logMAR, limited: false, astigmatism: null, duochrome: 'equal',
-  acuityAnswers: [{ logMAR: 0.3, ok: true, distanceMm: 500 }], ...extra,
+  acuityAnswers: [{ logMAR: 0.3, ok: true, distanceMm: 500 }], farPoint: null, ...extra,
 });
 const session = (p: Partial<Session> = {}): Session => ({
   safetyFlags: [], correction: 'none', testedWith: 'none', pxPerMm: 5.85, dpr: 2, scaleSource: 'card', scaleSavedAt: null, targetMm: 500,
@@ -50,13 +51,13 @@ const entry = (id: string, minutes = 0, p: Partial<Session> = {}): HistoryEntry 
 const interview: Interview = { ageBand: '40-59', screenHours: 'gt6', nightDriving: true, outdoors: 'some', complaints: ['glare', 'headache'] };
 
 describe('sessionEntry', () => {
-  it('wraps the v12 report with the id and times, and reuses triage and the recommendation', () => {
+  it('wraps the v13 report with the id and times, and reuses triage and the recommendation', () => {
     const s = session({ interview, lang: 'hi' });
     const e = sessionEntry(s, { id: 'a', startedAt: iso(0) }, device, iso(5));
     expect(e.id).toBe('a');
     expect(e.startedAt).toBe(iso(0));
     expect(e.savedAt).toBe(iso(5));
-    expect(e.report.version).toBe(12);
+    expect(e.report.version).toBe(13);
     expect(e.report.at).toBe(iso(5));
     expect(e.report.triage).toEqual(triage(s.safetyFlags, s.results, s.targetMm));
     expect(e.report.recommendation).toEqual(recommend(s, e.report.triage, interview));
@@ -108,49 +109,78 @@ describe('parseHistory', () => {
   });
 });
 
-describe('report versions v11 and v12', () => {
-  /** A session saved before the Landolt C: the v11 report had the same fields, only the version and charts differ. */
-  const v11 = (id: string, minutes = 0, chart: Session['chart'] = 'letters'): HistoryEntry => {
+describe('report versions v11, v12 and v13', () => {
+  /** A report saved before the far-point step (v12) or also before the Landolt C (v11): no farPoint in either eye. */
+  const old = (version: 11 | 12) => (id: string, minutes = 0, chart: Session['chart'] = 'letters'): HistoryEntry => {
     const e = entry(id, minutes, { chart });
-    return { ...e, report: { ...e.report, version: 11 } };
+    const strip = ({ farPoint: _f, ...rest }: EyeResult) => { void _f; return rest; };
+    const results = { right: strip(e.report.results.right), left: strip(e.report.results.left) } as unknown as Session['results'];
+    return { ...e, report: { ...e.report, version, results } };
   };
+  const v11 = old(11);
+  const v12 = old(12);
   const cAnswers = [
     { logMAR: 0.5, ok: true, distanceMm: 500, shown: 'up' as const, picked: 'up' as const },
     { logMAR: 0.5, ok: false, distanceMm: 501, shown: 'left' as const, picked: null },
   ];
   const landolt = (id: string, minutes = 0) =>
-    entry(id, minutes, { chart: 'C', lang: 'hi', results: { right: eye(0.2, { acuityAnswers: cAnswers }), left: eye(0) } });
+    entry(id, minutes, {
+      chart: 'C', lang: 'hi',
+      results: { right: eye(0.2, { acuityAnswers: cAnswers, farPoint: measuredFarPoint([40, 55, 42]) }), left: eye(0, { farPoint: blurredFarPoint(18) }) },
+    });
+  const withFar = (e: HistoryEntry, farPoint: unknown): HistoryEntry =>
+    ({ ...e, report: { ...e.report, results: { ...e.report.results, left: { ...e.report.results.left, farPoint } } } }) as HistoryEntry;
 
-  it('accepts exactly v11 and v12', () => {
-    expect([...HISTORY_REPORT_VERSIONS]).toEqual([11, 12]);
+  it('accepts exactly v11, v12 and v13', () => {
+    expect([...HISTORY_REPORT_VERSIONS]).toEqual([11, 12, 13]);
   });
-  it('saves a v12 Landolt C session and reads it back unchanged', () => {
+  it('saves a v13 Landolt C session with far points and reads it back unchanged', () => {
     const s = memoryStore();
     const e = landolt('c');
-    expect(e.report.version).toBe(12);
+    expect(e.report.version).toBe(13);
     expect(e.report.chart).toBe('C');
     expect(addToHistory(s, e).ok).toBe(true);
     const [back] = loadHistory(s);
     expect(back).toEqual(e);
     expect(back.report.results.right.acuityAnswers).toEqual(cAnswers);
+    expect(back.report.results.right.farPoint).toMatchObject({ outcome: 'measured', medianCm: 42, estimateD: -2.25 });
+    expect(back.report.results.left.farPoint).toMatchObject({ outcome: 'already-blurred', trialsCm: [18] });
+    // A skipped far point (null) is valid too.
+    expect(isHistoryEntry(entry('skip'))).toBe(true);
+    expect(entry('skip').report.results.right.farPoint).toBeNull();
   });
-  it('keeps v11 sessions saved before the update (E, letters or no chart), next to new v12 ones', () => {
+  it('keeps v11 and v12 sessions saved before the update (no far point), next to new v13 ones', () => {
     for (const chart of ['E', 'letters', null] as const) expect(isHistoryEntry(v11('old', 0, chart))).toBe(true);
+    for (const chart of ['E', 'letters', 'C', null] as const) expect(isHistoryEntry(v12('old', 0, chart))).toBe(true);
     const s = memoryStore();
-    s.map.set(HISTORY_KEY, JSON.stringify([v11('old', 0), v11('older', -10, 'E')]));
+    s.map.set(HISTORY_KEY, JSON.stringify([v12('mid', 0, 'C'), v11('old', -5), v11('older', -10, 'E')]));
     expect(addToHistory(s, landolt('new', 10)).ok).toBe(true);
     const list = loadHistory(s);
-    expect(list.map((e) => [e.id, e.report.version, e.report.chart])).toEqual([['new', 12, 'C'], ['old', 11, 'letters'], ['older', 11, 'E']]);
+    expect(list.map((e) => [e.id, e.report.version, e.report.chart])).toEqual([['new', 13, 'C'], ['mid', 12, 'C'], ['old', 11, 'letters'], ['older', 11, 'E']]);
+    expect('farPoint' in list[1].report.results.right).toBe(false);
   });
   it('drops a v11 report naming the Landolt C (v11 never had it), unknown charts, and other versions', () => {
     const cInV11 = v11('x', 0, 'C');
     const badChart = { ...entry('y'), report: { ...entry('y').report, chart: 'Snellen' } };
     const v10 = { ...entry('z'), report: { ...entry('z').report, version: 10 } };
-    const v13 = { ...entry('w'), report: { ...entry('w').report, version: 13 } };
-    const noVersion = { ...entry('n'), report: { ...entry('n').report, version: '12' } };
+    const v14 = { ...entry('w'), report: { ...entry('w').report, version: 14 } };
+    const noVersion = { ...entry('n'), report: { ...entry('n').report, version: '13' } };
     expect(isHistoryEntry(cInV11)).toBe(false);
     expect(isHistoryEntry(badChart)).toBe(false);
-    expect(parseHistory(JSON.stringify([cInV11, badChart, v10, v13, noVersion, landolt('ok')])).map((e) => e.id)).toEqual(['ok']);
+    expect(parseHistory(JSON.stringify([cInV11, badChart, v10, v14, noVersion, landolt('ok')])).map((e) => e.id)).toEqual(['ok']);
+  });
+  it('drops a v12 report with a far point, a v13 report without one, and a malformed far-point block', () => {
+    const v12Far = { ...landolt('a'), report: { ...landolt('a').report, version: 12 } };
+    const v13NoFar = { ...v12('b'), report: { ...v12('b').report, version: 13 } };
+    const bad = [
+      v12Far, v13NoFar, withFar(entry('c'), undefined), withFar(entry('d'), { outcome: 'measured' }),
+      withFar(entry('e'), { trialsCm: [42], medianCm: 42, outcome: 'measured', estimateD: -2.25, rangeD: null }),
+      withFar(entry('f'), { trialsCm: [42], medianCm: 40, outcome: 'beyond', estimateD: null, rangeD: null }),
+      withFar(entry('g'), { trialsCm: [18, 19], medianCm: 18.5, outcome: 'already-blurred', estimateD: null, rangeD: null }),
+      withFar(entry('h'), { ...clearFarPoint(68), outcome: 'clear' }),
+    ];
+    for (const e of bad) expect(isHistoryEntry(e), e.id).toBe(false);
+    expect(parseHistory(JSON.stringify([...bad, landolt('ok'), withFar(entry('ok2'), clearFarPoint(68))])).map((e) => e.id).sort()).toEqual(['ok', 'ok2']);
   });
   it('labels every chart for the staff screen', () => {
     expect(CHART_TEXT).toEqual({ E: 'Tumbling E', letters: 'Letters (Sloan)', C: 'Landolt C' });

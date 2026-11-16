@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { testedWithText, usualWearText } from '../lib/correction';
 import { dialText } from '../lib/dial';
+import { farPointText } from '../lib/farpoint';
 import {
   CHART_TEXT, clearHistory, deleteFromHistory, DUO_TEXT, historyTime, interviewRows, KIND_TEXT, LANG_TEXT, LEVEL_TEXT, loadHistory,
   type HistoryEntry,
@@ -86,11 +87,18 @@ export function StaffSummary({ entry, onBack }: { entry: HistoryEntry; onBack: (
                   <Row k={`Near vision (${cm} cm)`}>{acuityText(x.logMAR, x.limited)}</Row>
                   <Row k="Line dial">{dialText(x.astigmatism)}</Row>
                   <Row k="Red-green">{x.duochrome ? DUO_TEXT[x.duochrome] : '—'}</Row>
+                  {/* Reports before v13 have no far-point step, so no row. */}
+                  {'farPoint' in x && (
+                    <Row k={r.testedWith === 'contacts' ? 'Far point, with contact lenses in' : 'Far point'}>{farPointText(x.farPoint)}</Row>
+                  )}
                 </dl>
               </div>
             );
           })}
-          <p className="mt-3 text-xs text-subtle">Near vision at {cm} cm can differ from distance vision.</p>
+          <p className="mt-3 text-xs text-subtle">
+            Near vision at {cm} cm can differ from distance vision.
+            {'farPoint' in r.results.right && ' The far point is a rough, provisional estimate of short sight (letters followed until they blur), not a prescription.'}
+          </p>
         </section>
 
         <section className="card">

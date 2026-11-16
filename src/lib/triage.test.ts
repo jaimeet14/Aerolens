@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { blurredFarPoint, clearFarPoint, measuredFarPoint } from './farpoint';
 import { acuityText, logMARText, snellenOf, triage } from './triage';
 import type { Eye, EyeResult } from './types';
 
 const eye = (logMAR: number | null, extra: Partial<EyeResult> = {}): EyeResult => ({
-  logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], ...extra,
+  logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], farPoint: null, ...extra,
 });
 const both = (r: number | null, l: number | null): Record<Eye, EyeResult> => ({ right: eye(r), left: eye(l) });
 const OK = 'No concern found today';
@@ -296,5 +297,51 @@ describe('acuityText (results screen)', () => {
     expect(logMARText(0.5)).toBe('0.5');
     expect(logMARText(-0)).toBe('0.0');
     expect(logMARText(-0.1)).toBe('−0.1');
+  });
+});
+
+describe('far point (16 Nov 2026): a measured −1.5 D or stronger raises ok to advise', () => {
+  const far = (cm: number) => measuredFarPoint([cm])!;
+  const reason = (e: string, cm: number, d: string) =>
+    `${e} eye: the letters blurred beyond ${cm} cm, which suggests short sight of about ${d} D (a rough estimate, not a prescription). The near vision (50 cm) test can miss this.`;
+
+  it('a 6/6 myope at 50 cm (far point 42 cm, about −2.25 D) is advise, with the reason (known issue #1)', () => {
+    expect(triage([], { right: eye(0, { farPoint: far(42) }), left: eye(0) })).toEqual({
+      level: 'advise', headline: ADVISE, reasons: [reason('Right', 42, '−2.25')], notes: [],
+    });
+  });
+  it('either eye, both eyes, in eye order after that eye\'s acuity and dial reasons', () => {
+    expect(triage([], { right: eye(0), left: eye(0, { farPoint: far(50) }) })).toMatchObject({ level: 'advise', reasons: [reason('Left', 50, '−2.00')] });
+    const t = triage([], { right: eye(0.1, { farPoint: far(40) }), left: eye(0, { farPoint: far(60) }) });
+    expect(t.reasons).toEqual([
+      'Right eye near vision (50 cm) is below 6/6 (6/7.5); a lens may help.',
+      reason('Right', 40, '−2.50'),
+      reason('Left', 60, '−1.50'),
+    ]);
+  });
+  it('the threshold is −1.5 D (PROVISIONAL): 64 cm (−1.5) advises, a weaker estimate or beyond does not', () => {
+    expect(triage([], { right: eye(0, { farPoint: far(64) }), left: eye(0) }).level).toBe('advise');
+    const weak = { trialsCm: [70], medianCm: 70, outcome: 'measured' as const, estimateD: -1.25, rangeD: [-1.75, -0.75] as [number, number] };
+    expect(triage([], { right: eye(0, { farPoint: weak }), left: eye(0) })).toEqual({ level: 'ok', headline: OK, reasons: [], notes: [] });
+    expect(triage([], { right: eye(0, { farPoint: far(65) }), left: eye(0) }).level).toBe('ok'); // 'beyond'
+  });
+  it('"Still clear", "Already blurred", skipped and missing (older reports) add nothing', () => {
+    for (const farPoint of [clearFarPoint(70), clearFarPoint(45), blurredFarPoint(18), null, undefined]) {
+      expect(triage([], { right: eye(0, { farPoint: farPoint as never }), left: eye(0) })).toEqual({ level: 'ok', headline: OK, reasons: [], notes: [] });
+    }
+  });
+  it('never lowers a level and never refers; red flags still refer first', () => {
+    expect(triage([], { right: eye(0.6, { farPoint: far(30) }), left: eye(0) }).level).toBe('refer');
+    expect(triage([], { right: eye(0, { farPoint: far(15) }), left: eye(0, { farPoint: far(15) }) }).level).toBe('advise');
+    expect(triage(['Double vision'], { right: eye(0, { farPoint: far(42) }), left: eye(0) })).toEqual({
+      level: 'refer', headline: 'Please see an eye doctor first', reasons: ['You reported: double vision'], notes: [],
+    });
+  });
+  it('Hindi: same level, the numbers kept', () => {
+    const t = triage([], { right: eye(0, { farPoint: far(42) }), left: eye(0) }, 500, 'hi');
+    expect(t.level).toBe('advise');
+    expect(t.reasons).toEqual([
+      'दाईं आँख: 42 cm से आगे अक्षर धुंधले हो गए, यानी लगभग −2.25 D का मायोपिया (दूर का कम दिखना) हो सकता है (मोटा अंदाज़ा, चश्मे का नंबर नहीं)। पास की नज़र (50 cm) की जाँच में यह छूट सकता है।',
+    ]);
   });
 });

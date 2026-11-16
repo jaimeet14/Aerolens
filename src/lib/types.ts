@@ -1,4 +1,5 @@
 import type { FitRecord } from './face';
+import type { FarPoint } from './farpoint';
 // Type-only imports (erased at runtime), so the recommend.ts / i18n.ts -> types.ts imports form no runtime cycle.
 import type { Lang } from './i18n';
 import type { Interview } from './recommend';
@@ -52,6 +53,11 @@ export interface EyeResult {
   astigmatism: DialAnswer | null;
   duochrome: Duochrome | null;
   acuityAnswers: AcuityAnswer[];
+  /**
+   * Far-point estimate of short sight (lib/farpoint.ts), after the red-green test; null when skipped or not reached.
+   * PROVISIONAL, never a prescription. Absent in reports before v13.
+   */
+  farPoint: FarPoint | null;
 }
 
 export interface Session {

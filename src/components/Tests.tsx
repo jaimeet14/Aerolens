@@ -1,9 +1,12 @@
 import { Fragment, useMemo, useState } from 'react';
 import type { Iris } from '../hooks/useIrisDistance';
-import { answer, initAcuity, LINES, nextDir, PER_LINE, screenLimit, SNELLEN } from '../lib/acuity';
+import { answer, initAcuity, LINES, MIN_STROKE_PX, nextDir, PER_LINE, screenLimit, SNELLEN } from '../lib/acuity';
 import { dialLineWidthMm, lineLabelIn, lineOfHour, pickedAnswer, toggleLine } from '../lib/dial';
 import { DUO_GREEN_CSS, DUO_INK_CSS, DUO_RED_CSS } from '../lib/duochrome';
-import { ACUITY, COVER, DIAL, DIR_TEXT, DUO, EYE, fmt, type Lang } from '../lib/i18n';
+import {
+  blurredFarPoint, clearFarPoint, FAR_NEAREST_CM, FAR_TRIALS, farPointLetterMm, measuredFarPoint, trialCm, type FarPoint,
+} from '../lib/farpoint';
+import { ACUITY, COVER, DIAL, DIR_TEXT, DUO, EYE, FAR, fmt, type Lang } from '../lib/i18n';
 import { landoltDiameterMm } from '../lib/landolt';
 import { optotypeHeightMm } from '../lib/optics';
 import { nextLetter, SLOAN_LETTERS, type Letter } from '../lib/sloan';
@@ -11,6 +14,7 @@ import type { AcuityAnswer, Chart, DialAnswer, Dir, Duochrome, Eye, EyeResult } 
 import { DistanceGuard } from './DistanceGuard';
 import { LandoltC } from './LandoltC';
 import { SloanLetter } from './SloanLetter';
+import { Rich } from './Text';
 import { TumblingE } from './TumblingE';
 
 export interface Geometry { pxPerMm: number; targetMm: number }
@@ -294,6 +298,91 @@ export function DuochromeTest({ lang, eye, iris, geo, acuity, onDone }: {
           <button className="btn text-sm font-semibold" style={{ background: DUO_GREEN_CSS, color: DUO_INK_CSS }} onClick={() => onDone('green')}>{DUO.green[lang]}</button>
         </div>
       </DistanceGuard>
+    </div>
+  );
+}
+
+/* ---------- Far point: a rough short-sight estimate (lib/farpoint.ts, PROVISIONAL) ---------- */
+const FAR_LINE = 5; // optotypes in the line
+/** A line of optotypes with no two neighbours alike: Sloan letters, or E / C directions. */
+const letterLine = () => { const l: Letter[] = []; for (let i = 0; i < FAR_LINE; i++) l.push(nextLetter(l[i - 1] ?? null)); return l; };
+const dirLine = () => { const d: Dir[] = []; for (let i = 0; i < FAR_LINE; i++) d.push(nextDir(d[i - 1] ?? null)); return d; };
+
+/**
+ * Far point, after the red-green test of each eye. Not gated by DistanceGuard: the distance changes on purpose, and
+ * the live distance is shown instead. A line of the session's optotypes at a FIXED physical size (farPointLetterMm:
+ * 0.1 logMAR at 65 cm, about 1.19 mm), spaced one letter apart. The person starts close, slowly moves the phone away and taps
+ * "Blurred now" at the first blur; FAR_TRIALS trials (a new line each time), then the median (measuredFarPoint).
+ * "Still clear at arm's length" and "Already blurred" end the step with that outcome; "Skip this step" gives null.
+ * Every tap except Skip needs a face and a distance in range (trialCm); otherwise it is ignored and says why.
+ * Demo mode: the distance is fixed at 50 cm, so three taps give 50 cm (about −2.00 D).
+ */
+export function FarPointTest({ lang, eye, chart, iris, pxPerMm, onDone }: {
+  lang: Lang; eye: Eye; chart: Chart; iris: Iris; pxPerMm: number; onDone: (r: FarPoint | null) => void;
+}) {
+  const T = FAR;
+  const [trials, setTrials] = useState<number[]>([]);
+  const [line, setLine] = useState(() => ({ letters: letterLine(), dirs: dirLine() }));
+  const [needFace, setNeedFace] = useState(false);
+  const sizeMm = farPointLetterMm();
+  const sizeCss = sizeMm * pxPerMm;
+  // Same rule as the acuity chart's screen limit; warned, not blocked (larger-looking letters only make the estimate weaker).
+  const coarse = (sizeMm / 5) * pxPerMm * (window.devicePixelRatio || 1) < MIN_STROKE_PX;
+  const cm = iris.faceFound ? trialCm(iris.distanceMm) : null;
+  /** The distance for a tap, or null (the tap is ignored) without a face or a distance in range. */
+  const tapCm = (): number | null => {
+    setNeedFace(cm === null);
+    return cm;
+  };
+  const blurredNow = () => {
+    const c = tapCm();
+    if (c === null) return;
+    const next = [...trials, c];
+    if (next.length >= FAR_TRIALS) return onDone(measuredFarPoint(next));
+    setTrials(next);
+    setLine({ letters: letterLine(), dirs: dirLine() });
+  };
+  const endWith = (make: (c: number) => FarPoint | null) => {
+    const c = tapCm();
+    if (c !== null) onDone(make(c));
+  };
+  return (
+    <div>
+      <p className="mb-2 text-center text-sm text-muted">{EYE[eye][lang]} · {T.header[lang]}</p>
+      <div className="mb-3 flex items-center justify-between gap-2 text-sm">
+        <span className={`rounded-full px-3 py-1 font-medium ${cm !== null ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+          {fmt(T.distance[lang], { distance: cm !== null ? `${cm} cm` : T.noFace[lang] })}
+        </span>
+        <span className="text-subtle">{fmt(T.trial[lang], { n: Math.min(trials.length + 1, FAR_TRIALS), total: FAR_TRIALS })}</span>
+      </div>
+      <div className="card text-sm">
+        <h2 className="text-base font-semibold">{T.title[lang]}</h2>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted">
+          <li>{T.step1[lang]}</li>
+          <li>{fmt(T.step2[lang], { cm: FAR_NEAREST_CM })}</li>
+          <li>{T.step3[lang]}</li>
+          <li><Rich text={T.step4[lang]} boldClass="text-ink" /></li>
+        </ol>
+        {trials.length > 0 && (
+          <p className="mt-2" aria-live="polite">{fmt(T.recorded[lang], { list: trials.map((c) => `${c} cm`).join(', ') })} {T.again[lang]}</p>
+        )}
+      </div>
+      <div className="mt-3 flex h-24 items-center justify-center rounded-2xl bg-white" role="img" aria-label={T.letters[lang]}>
+        <div className="flex items-center" style={{ gap: sizeCss }} aria-hidden>
+          {chart === 'letters'
+            ? line.letters.map((l, i) => <SloanLetter key={i} letter={l} sizeCss={sizeCss} />)
+            : line.dirs.map((d, i) => (chart === 'C' ? <LandoltC key={i} dir={d} sizeCss={sizeCss} /> : <TumblingE key={i} dir={d} sizeCss={sizeCss} />))}
+        </div>
+      </div>
+      {coarse && <p className="mt-2 text-center text-sm text-amber-900">{T.coarse[lang]}</p>}
+      {needFace && <p role="alert" className="mt-2 text-center text-sm text-red-700">{T.needFace[lang]}</p>}
+      <button className="btn btn-primary mt-3 min-h-14 w-full text-lg" onClick={blurredNow}>{T.blurred[lang]}</button>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <button className="btn btn-ghost px-3 text-sm" onClick={() => endWith(clearFarPoint)}>{T.stillClear[lang]}</button>
+        <button className="btn btn-ghost px-3 text-sm" onClick={() => endWith(blurredFarPoint)}>{T.alreadyBlurred[lang]}</button>
+      </div>
+      <button className="btn btn-ghost mt-2 w-full" onClick={() => onDone(null)}>{T.skip[lang]}</button>
+      <p className="mt-3 text-xs text-subtle">{T.note[lang]}</p>
     </div>
   );
 }

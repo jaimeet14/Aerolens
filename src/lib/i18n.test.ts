@@ -7,6 +7,7 @@ import {
   demoFaceSample, FACE_SHAPE_TEXT, FIT_FRAMES, FIT_PROBLEM_TEXT, fitProblemText, fitText, FRAME_HINT_TEXT, FRAME_ISSUE_TEXT, FRAME_SIZE_TEXT,
   frameIssueText, measureFit, MONO_DIFF_TEXT, rebuildFitText, SHAPE_REASON_TEXT, STYLE_TIPS_TEXT, type FitCapture, type FitProblem,
 } from './face';
+import { blurredFarPoint, clearFarPoint, farPointText, FARPOINT_TEXT, measuredFarPoint } from './farpoint';
 import { sessionEntry } from './history';
 import { fmt, inLang, LANG_NAME, LANGS, listText, richParts, SCREENS, splitTemplate, tr, type Lang, type Text } from './i18n';
 import * as interview from './interview';
@@ -15,8 +16,8 @@ import { acuityText, RED_FLAG_TEXT, RED_FLAGS, redFlagText, snellenOf, triage, T
 import type { DialAnswer, EyeResult, Session } from './types';
 
 const DEVANAGARI = /[ऀ-ॿ]/;
-/** Latin-script words a Hindi screen may keep: units and test terms, chart names, file and light abbreviations. */
-const LATIN_OK = new Set(['PD', 'cm', 'mm', 'logMAR', 'E', 'C', 'Landolt', 'Sloan', 'JSON', 'LED', 'UV']);
+/** Latin-script words a Hindi screen may keep: units (D = dioptre) and test terms, chart names, file and light abbreviations. */
+const LATIN_OK = new Set(['PD', 'cm', 'mm', 'D', 'logMAR', 'E', 'C', 'Landolt', 'Sloan', 'JSON', 'LED', 'UV']);
 /** ...plus the ZEISS family names, which are never translated. */
 const ZEISS_WORDS = new Set(Object.values(ZEISS_FAMILY).flatMap((n) => n.split(' ')));
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
@@ -39,6 +40,7 @@ const ALL_TABLES = {
   blocker: BLOCKER_TEXT, frameIssue: FRAME_ISSUE_TEXT, fitProblem: FIT_PROBLEM_TEXT, monoDiff: MONO_DIFF_TEXT, faceShape: FACE_SHAPE_TEXT,
   shapeReasons: SHAPE_REASON_TEXT, styleTips: STYLE_TIPS_TEXT, frameSize: FRAME_SIZE_TEXT, frameHints: FRAME_HINT_TEXT,
   category: CATEGORY_TEXT, status: STATUS_TEXTS, rec: REC_TEXT, eyes: EYES_TEXT, interview: { questions: interview.QUESTIONS, ui: interview.UI },
+  farPoint: FARPOINT_TEXT,
 };
 const ALL = texts(ALL_TABLES, 'all');
 
@@ -82,6 +84,7 @@ describe('string tables', () => {
     for (const l of LANGS) expect(SCREENS.dial.allSix[l]).toContain(SCREENS.dial.same[l]);
     for (const l of LANGS) expect(SCREENS.scale.step4[l]).toContain(`**${SCREENS.scale.done[l]}**`);
     for (const l of LANGS) expect(SCREENS.calibration.step3[l]).toContain(`**${SCREENS.calibration.button[l]}**`);
+    for (const l of LANGS) expect(SCREENS.farPoint.step4[l]).toContain(`**${SCREENS.farPoint.blurred[l]}**`);
   });
 });
 
@@ -111,7 +114,7 @@ describe('helpers', () => {
 /* ---------- generated sentences ---------- */
 
 const eye = (logMAR: number | null, extra: Partial<EyeResult> = {}): EyeResult => ({
-  logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], ...extra,
+  logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], farPoint: null, ...extra,
 });
 const dark = (lines: number[], axisDeg: number | null): DialAnswer => ({ present: true, lines, axisDeg });
 const capture = (): FitCapture => {
@@ -128,6 +131,7 @@ const ask: Interview = { ageBand: '40-59', screenHours: 'gt6', nightDriving: tru
 const RESULT_SETS: [EyeResult, EyeResult][] = [
   [eye(0), eye(0)], [eye(0.2), eye(0.2)], [eye(0.6), eye(0)], [eye(null), eye(0.1, { astigmatism: dark([2, 3], 75) })],
   [eye(0, { astigmatism: dark([6], 180) }), eye(0.2, { limited: true, duochrome: 'green' })], [eye(0.3, { duochrome: 'red' }), eye(0.1, { duochrome: 'green' })],
+  [eye(0, { farPoint: measuredFarPoint([42, 40, 45]) }), eye(0, { farPoint: clearFarPoint(70) })], [eye(0.1, { farPoint: blurredFarPoint(18) }), eye(0, { farPoint: measuredFarPoint([40, 45]) })],
 ];
 const INTERVIEWS: (Interview | null)[] = [
   null, ask, { ...ask, ageBand: '60+', complaints: [] }, { ...ask, ageBand: 'under18', screenHours: 'lt2', nightDriving: false, outdoors: 'little' },
@@ -168,6 +172,14 @@ describe('triage in Hindi', () => {
     expect(acuityText(null, false, 'hi')).toBe('6/60 से भी कम');
     expect(snellenOf(null, 'hi')).toBe('6/60 से भी कम');
     expect(acuityText(0, true)).toBe('6/6 or better (logMAR ≤ 0.0)');
+  });
+});
+
+describe('far point in Hindi', () => {
+  it('same sentences with the same numbers and no other English', () => {
+    const fps = [measuredFarPoint([42]), measuredFarPoint([40, 45]), measuredFarPoint([66, 70]), clearFarPoint(50), blurredFarPoint(18), blurredFarPoint(30), null];
+    samePairs(fps.map((f) => farPointText(f)), fps.map((f) => farPointText(f, 'hi')), 'far point');
+    expect(farPointText(null, 'hi')).toBe('छोड़ दिया गया');
   });
 });
 
@@ -299,9 +311,9 @@ describe('report and history', () => {
         expect(JSON.stringify(hi.report)).not.toMatch(DEVANAGARI);
       }
   });
-  it('the report version is unchanged (history keeps reading v11 and v12)', () => {
+  it('the report is v13 in every language (history keeps reading v11 and v12)', () => {
     const e = sessionEntry({ ...base, lang: 'hi' }, { id: 'v', startedAt: '2026-11-15T10:00:00.000Z' }, device, '2026-11-15T10:05:00.000Z');
-    expect(e.report.version).toBe(12);
+    expect(e.report.version).toBe(13);
   });
   it('Hindi still presets the Landolt C', () => {
     expect(presetChart('hi')).toBe('C');

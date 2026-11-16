@@ -1,5 +1,6 @@
 import type { Eye, EyeResult } from './types';
 import { LINES, SNELLEN } from './acuity';
+import { cmText, dioptreText, farPointAdvises } from './farpoint';
 import { fmt, type Lang, type Text } from './i18n';
 
 /**
@@ -66,6 +67,10 @@ export const TRIAGE_TEXT = {
     en: '{eye} eye: some dial lines looked darker, which can point to astigmatism.',
     hi: '{eye}: गोले की कुछ लाइनें ज़्यादा गहरी दिखीं, जो एस्टिग्मैटिज़्म (सिलेंडर नंबर) का संकेत हो सकता है।',
   },
+  farPoint: {
+    en: '{eye} eye: the letters blurred beyond {cm} cm, which suggests short sight of about {d} D (a rough estimate, not a prescription). The {near} test can miss this.',
+    hi: '{eye}: {cm} cm से आगे अक्षर धुंधले हो गए, यानी लगभग {d} D का मायोपिया (दूर का कम दिखना) हो सकता है (मोटा अंदाज़ा, चश्मे का नंबर नहीं)। {near} की जाँच में यह छूट सकता है।',
+  },
   differ2: { en: "The two eyes' {near} differs by two lines.", hi: 'दोनों आँखों की {near} में दो लाइनों का फ़र्क है।' },
   differ3: { en: "The two eyes' {near} differs by three or more lines.", hi: 'दोनों आँखों की {near} में तीन या ज़्यादा लाइनों का फ़र्क है।' },
   headRefer: { en: 'Please see an optometrist soon', hi: 'कृपया जल्द ही ऑप्टोमेट्रिस्ट को दिखाएँ' },
@@ -123,6 +128,11 @@ export const DIFF_REFER = 0.3;
  * 0.2 ≤ |R − L| < 0.3 (two lines) -> 'advise'. Two lines of uncorrected near acuity is within test-retest noise
  * and usually means the eyes need different lenses (an optometrist's job), so 'refer' is kept for "see someone soon".
  *
+ * Far point (added 16 Nov 2026, PROVISIONAL): a 'measured' far-point estimate of FAR_ADVISE_D (−1.5 D) or stronger in
+ * either eye (lib/farpoint.ts farPointAdvises) raises 'ok' to 'advise' with a reason, because the 50 cm acuity test
+ * misses short sight up to about −2 D (known issue #1). It never lowers a level and never refers; 'beyond',
+ * 'already-blurred', a skipped step (null) and reports without the field add nothing.
+ *
  * `lang` changes only the words of headline, reasons and notes, never the level. The report and history always
  * store the English triage (lang 'en'); the results screen shows a second one in the session language.
  * `flags` are the stored English RED_FLAGS strings.
@@ -168,6 +178,11 @@ export function triage(flags: string[], results: Record<Eye, EyeResult>, targetM
         up('advise');
         reasons.push(fmt(T.dialReason[lang], v));
       }
+    }
+    const fp = r.farPoint;
+    if (farPointAdvises(fp)) {
+      up('advise');
+      reasons.push(fmt(T.farPoint[lang], { ...v, cm: cmText(fp.medianCm), d: dioptreText(fp.estimateD) }));
     }
   }
   const [a, b] = [results.right.logMAR, results.left.logMAR];

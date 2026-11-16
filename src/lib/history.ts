@@ -1,8 +1,8 @@
 /*
  * Phase 3 step 3: recent sessions on this phone, for the staff screen (components/Staff.tsx).
  *
- * Each finished session's export report (report v12, lib/report.ts buildReport; v11 reports saved before the
- * Landolt C chart are still read, see HISTORY_REPORT_VERSIONS) is kept in localStorage
+ * Each finished session's export report (report v13, lib/report.ts buildReport; v11 reports saved before the
+ * Landolt C chart and v12 reports saved before the far-point step are still read, see HISTORY_REPORT_VERSIONS) is kept in localStorage
  * `aerolens.history`, newest first, at most HISTORY_MAX entries. The report itself is unchanged: the session id and
  * start time live in the history entry around it, because the report has neither and only the history needs them.
  * No customer names are stored (the app never asks for one). Demo sessions are kept too; report.demo marks them.
@@ -10,6 +10,7 @@
  * Reading is strict: anything that is not a valid entry (corrupt JSON, wrong version, missing fields) is dropped,
  * never thrown. All storage goes through lib/storage.ts, so a blocked or full store just means "nothing saved".
  */
+import { isFarPoint } from './farpoint';
 import { buildInterview, QUESTIONS, type Lang } from './interview';
 import { recommend, type RecKind, type RecStatus } from './recommend';
 import { buildReport, type Device } from './report';
@@ -20,12 +21,15 @@ import type { Chart, Duochrome, Session } from './types';
 export const HISTORY_KEY = 'aerolens.history';
 export const HISTORY_MAX = 20;
 /**
- * Report versions the history accepts: v12 (the current buildReport output) and v11, so sessions saved before the
- * Landolt C chart are kept. The two differ only in the charts a report may name (v12 added 'C').
+ * Report versions the history accepts: v13 (the current buildReport output), v12 (before the far-point step) and v11
+ * (before the Landolt C chart), so older sessions are kept. v12 added chart 'C'; v13 added results[eye].farPoint, which
+ * a v13 report must have in each eye (null or a valid block) and a v11 or v12 report must not have.
  */
-export const HISTORY_REPORT_VERSIONS = [11, 12] as const;
+export const HISTORY_REPORT_VERSIONS = [11, 12, 13] as const;
 type HistoryVersion = (typeof HISTORY_REPORT_VERSIONS)[number];
-const CHARTS: Record<HistoryVersion, readonly (Chart | null)[]> = { 11: [null, 'E', 'letters'], 12: [null, 'E', 'letters', 'C'] };
+const CHARTS: Record<HistoryVersion, readonly (Chart | null)[]> = {
+  11: [null, 'E', 'letters'], 12: [null, 'E', 'letters', 'C'], 13: [null, 'E', 'letters', 'C'],
+};
 
 export type StoredReport = ReturnType<typeof buildReport<Triage>>;
 
@@ -85,13 +89,15 @@ function isTriage(x: unknown): boolean {
   return isObj(x) && oneOf(LEVELS, x.level) && isStr(x.headline) && isStrArr(x.reasons) && isStrArr(x.notes);
 }
 
-function isEyeResult(x: unknown): boolean {
+function isEyeResult(x: unknown, v: HistoryVersion): boolean {
   if (!isObj(x)) return false;
   const a = x.astigmatism;
   const dialOk = a === null || (isObj(a) && typeof a.present === 'boolean' && isNumArr(a.lines)
     && (a.axisDeg === null || isNum(a.axisDeg)) && (a.unsure === undefined || a.unsure === true));
+  // v13: farPoint always present (null = skipped); before v13 the step did not exist.
+  const farOk = v >= 13 ? 'farPoint' in x && isFarPoint(x.farPoint) : !('farPoint' in x);
   return (x.logMAR === null || isNum(x.logMAR)) && typeof x.limited === 'boolean' && dialOk
-    && (x.duochrome === null || oneOf(['red', 'green', 'equal'], x.duochrome)) && Array.isArray(x.acuityAnswers);
+    && (x.duochrome === null || oneOf(['red', 'green', 'equal'], x.duochrome)) && Array.isArray(x.acuityAnswers) && farOk;
 }
 
 function isRecommendation(x: unknown): boolean {
@@ -115,7 +121,7 @@ function isFit(x: unknown): boolean {
     && isStrArr(frame.hints) && isTips(frame.suggest) && isTips(frame.avoid);
 }
 
-/** True for a report v11 or v12 with every field the staff screen reads (chart 'C' only from v12). */
+/** True for a report v11 to v13 with every field the staff screen reads (chart 'C' from v12, farPoint from v13). */
 export function isStoredReport(x: unknown): x is StoredReport {
   if (!isObj(x)) return false;
   const v = x.version;
@@ -125,7 +131,7 @@ export function isStoredReport(x: unknown): x is StoredReport {
     && oneOf([null, 'none', 'glasses', 'contacts'], x.correction)
     && oneOf([null, 'none', 'contacts'], x.testedWith)
     && oneOf(CHARTS[v], x.chart)
-    && isObj(r) && isEyeResult(r.right) && isEyeResult(r.left)
+    && isObj(r) && isEyeResult(r.right, v) && isEyeResult(r.left, v)
     && isTriage(x.triage)
     && (x.interview === null || buildInterview(x.interview as Parameters<typeof buildInterview>[0]) !== null)
     && oneOf([null, 'en', 'hi'], x.lang)

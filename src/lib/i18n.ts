@@ -346,6 +346,44 @@ export const DUO = {
   green: { en: 'Green', hi: 'हरा' },
 } satisfies Record<string, Text>;
 
+/** Far-point step (components/Tests.tsx FarPointTest), after the red-green test of each eye. */
+export const FAR = {
+  header: { en: 'far point', hi: 'धुंधला होने की दूरी' },
+  title: { en: 'How far do the letters stay clear?', hi: 'अक्षर कितनी दूर तक साफ़ दिखते हैं?' },
+  step1: {
+    en: 'Keep the other eye covered and your glasses off (contact lenses may stay in).',
+    hi: 'दूसरी आँख ढकी रखें और चश्मा न पहनें (कॉन्टैक्ट लेंस लगे रह सकते हैं)।',
+  },
+  step2: {
+    en: 'Start with the phone close, about {cm} cm from your eye, where the letters are clear.',
+    hi: 'शुरू में फ़ोन को पास रखें, आँख से लगभग {cm} cm दूर, जहाँ अक्षर साफ़ दिखें।',
+  },
+  step3: { en: 'Slowly move the phone away from your face.', hi: 'फ़ोन को धीरे-धीरे चेहरे से दूर ले जाएँ।' },
+  step4: { en: 'Tap **Blurred now** as soon as the letters start to blur.', hi: 'जैसे ही अक्षर धुंधले होने लगें, **अब धुंधला है** दबाएँ।' },
+  distance: { en: 'Distance: {distance}', hi: 'दूरी: {distance}' },
+  noFace: { en: 'no face', hi: 'चेहरा नहीं दिखा' },
+  trial: { en: 'Try {n} of {total}', hi: 'कोशिश {n} ({total} में से)' },
+  recorded: { en: 'Recorded: {list}', hi: 'दर्ज हुआ: {list}' },
+  again: { en: 'Bring the phone close again, then slowly move it away.', hi: 'फ़ोन को फिर से पास लाएँ, फिर धीरे-धीरे दूर ले जाएँ।' },
+  blurred: { en: 'Blurred now', hi: 'अब धुंधला है' },
+  stillClear: { en: "Still clear at arm's length", hi: 'हाथ भर की दूरी पर भी साफ़ है' },
+  alreadyBlurred: { en: 'Already blurred', hi: 'पहले से धुंधला है' },
+  skip: { en: 'Skip this step', hi: 'यह कदम छोड़ें' },
+  needFace: {
+    en: 'The camera could not see your face, so nothing was recorded. Look at the screen and tap again.',
+    hi: 'कैमरे को आपका चेहरा नहीं दिखा, इसलिए कुछ दर्ज नहीं हुआ। स्क्रीन की ओर देखें और फिर से दबाएँ।',
+  },
+  coarse: {
+    en: 'This screen cannot draw these small letters sharply, so this result is less reliable.',
+    hi: 'यह स्क्रीन इन छोटे अक्षरों को ठीक से नहीं बना सकती, इसलिए यह नतीजा कम भरोसेमंद है।',
+  },
+  letters: { en: 'A line of small test letters', hi: 'जाँच के छोटे अक्षरों की एक लाइन' },
+  note: {
+    en: 'This gives a rough estimate of short sight. It is not a prescription.',
+    hi: 'इससे दूर के कम दिखने (मायोपिया) का मोटा अंदाज़ा मिलता है। यह चश्मे का नंबर नहीं है।',
+  },
+} satisfies Record<string, Text>;
+
 export const GUARD = {
   badge: { en: '{distance} · target {cm} cm', hi: '{distance} · सही दूरी {cm} cm' },
   noFace: { en: 'no face', hi: 'चेहरा नहीं दिखा' },
@@ -415,6 +453,8 @@ export const RESULTS = {
   near: { en: 'Near vision ({cm} cm)', hi: 'पास की नज़र ({cm} cm)' },
   dial: { en: 'Line dial', hi: 'लाइनों वाला गोला' },
   redGreen: { en: 'Red-green', hi: 'लाल-हरा टेस्ट' },
+  farPoint: { en: 'Far point', hi: 'धुंधला होने की दूरी' },
+  farPointContacts: { en: 'Far point, with contact lenses in', hi: 'धुंधला होने की दूरी, कॉन्टैक्ट लेंस लगाकर' },
   limited: {
     en: "Your screen can't draw smaller letters, so this is the best this phone can measure.",
     hi: 'आपकी स्क्रीन इससे छोटे अक्षर नहीं बना सकती, इसलिए यह फ़ोन इससे बेहतर नहीं नाप सकता।',
@@ -444,6 +484,6 @@ export const RESULTS = {
 /** Every screen table, by screen, in the order the screens appear (tests and docs/hindi-review.md walk this). */
 export const SCREENS = {
   welcome: WELCOME, safety: SAFETY, referral: REFERRAL, scale: SCALE, camera: CAMERA, calibration: CALIBRATION, zoom: ZOOM,
-  progress: PROGRESS, cover: COVER, acuity: ACUITY, dial: DIAL, duochrome: DUO, distance: GUARD, fit: FIT, fitSummary: FIT_SUMMARY,
+  progress: PROGRESS, cover: COVER, acuity: ACUITY, dial: DIAL, duochrome: DUO, farPoint: FAR, distance: GUARD, fit: FIT, fitSummary: FIT_SUMMARY,
   results: RESULTS, eye: EYE, direction: DIR_TEXT, chart: CHART_NAME, duoAnswer: DUO_ANSWER, kind: KIND_NAME,
 } satisfies Record<string, Record<string, Text>>;

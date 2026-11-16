@@ -2,8 +2,10 @@
  * Phase 3 step 2: the short interview (text + tap, English and Hindi) that feeds recommend().
  * Pure data and helpers; components/Interview.tsx only renders them.
  *
- * Each question has a stable id (q1..q5). A later voice step plays a recorded clip per question and language,
- * named by audioPath(lang, id) (for example /audio/hi/q1), so ids must never be renumbered or reused.
+ * Each question has a stable id (q1..q5). The interview reads each screen aloud from pre-recorded human clips
+ * (never text-to-speech), one per clip id ('intro', q1..q5) and language, at audioPath(lang, id)
+ * (for example /audio/hi/q1.mp3), so ids must never be renumbered or reused. clipScript(lang, id) is the exact
+ * wording to record; docs/recording-script.md lists it and a test keeps the two identical.
  *
  * Answers are a Partial<Interview>: a missing field is unanswered. For the complaints question an empty array
  * means "None of these" was chosen; deselecting every complaint makes it unanswered again (undefined).
@@ -101,6 +103,10 @@ export const UI = {
   back: { en: 'Back', hi: 'पीछे' },
   next: { en: 'Next', hi: 'आगे' },
   skip: { en: 'Skip questions', hi: 'सवाल छोड़ें' },
+  // Read-aloud controls, shown only when a recorded clip has loaded. The sound buttons name the action.
+  playAgain: { en: 'Play again', hi: 'फिर से सुनें' },
+  soundOff: { en: 'Sound off', hi: 'आवाज़ बंद करें' },
+  soundOn: { en: 'Sound on', hi: 'आवाज़ चालू करें' },
 } satisfies Record<string, Text>;
 
 /** "Question 2 of 5" / "सवाल 2 / 5". */
@@ -108,9 +114,32 @@ export function questionCount(lang: Lang, n: number, total: number = QUESTIONS.l
   return lang === 'hi' ? `सवाल ${n} / ${total}` : `Question ${n} of ${total}`;
 }
 
-/** Where the recorded clip for a question will live (voice step, not built yet). */
-export function audioPath(lang: Lang, id: QuestionId): string {
-  return `/audio/${lang}/${id}`;
+/** Recorded clips: the intro text, then one per question (question text followed by its options). */
+export const CLIP_IDS = ['intro', 'q1', 'q2', 'q3', 'q4', 'q5'] as const satisfies readonly ('intro' | QuestionId)[];
+export type ClipId = (typeof CLIP_IDS)[number];
+
+/** Where the recorded clip lives (public/audio/<lang>/<id>.mp3, precached by the service worker). */
+export function audioPath(lang: Lang, id: ClipId): string {
+  return `/audio/${lang}/${id}.mp3`;
+}
+
+/** Ending punctuation that counts as a finished sentence: . ? ! and the Devanagari danda । */
+const SENTENCE_END = /[.?!।]$/;
+/** One spoken sentence: the text, plus "." (English) or "।" (Hindi) when it has no ending punctuation. */
+export function sentence(lang: Lang, text: string): string {
+  const t = text.trim();
+  return SENTENCE_END.test(t) ? t : t + (lang === 'hi' ? '।' : '.');
+}
+
+/**
+ * The exact words to record for a clip: for 'intro', UI.intro; for a question, the question text and then each
+ * option, each as its own sentence (see sentence()), joined by single spaces.
+ */
+export function clipScript(lang: Lang, id: ClipId): string {
+  if (id === 'intro') return sentence(lang, UI.intro[lang]);
+  const q = QUESTIONS.find((x) => x.id === id);
+  if (!q) throw new Error(`unknown clip id ${id}`);
+  return [q.text, ...q.options.map((o) => o.text)].map((t) => sentence(lang, t[lang])).join(' ');
 }
 
 const valuesOf = (field: keyof Interview) => {

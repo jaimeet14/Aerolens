@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { testedWithText, usualWearText } from '../lib/correction';
 import { dialText } from '../lib/dial';
+import { farPointText } from '../lib/farpoint';
 import type { HistoryEntry } from '../lib/history';
 import { CHART_NAME, DUO_ANSWER, EYE, fmt, KIND_NAME, RESULTS, type Lang } from '../lib/i18n';
 import { recommend, STATUS_TEXTS, type Recommendation } from '../lib/recommend';
@@ -98,6 +99,9 @@ export function Results({ session, entry, saved, onRestart, onStaff }: {
               <dd><NoBreakParen text={dialText(r.astigmatism, lang)} /></dd>
               <dt className="text-subtle">{T.redGreen[lang]}</dt>
               <dd>{r.duochrome ? DUO_ANSWER[r.duochrome][lang] : '—'}</dd>
+              {/* PROVISIONAL estimate (lib/farpoint.ts); measured with contact lenses in when the person kept them in. */}
+              <dt className="text-subtle">{(session.testedWith === 'contacts' ? T.farPointContacts : T.farPoint)[lang]}</dt>
+              <dd>{farPointText(r.farPoint ?? null, lang)}</dd>
             </dl>
             {r.limited && <p className="mt-2 text-sm text-muted">{T.limited[lang]}</p>}
           </div>

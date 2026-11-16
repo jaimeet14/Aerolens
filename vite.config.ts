@@ -20,9 +20,11 @@ export default defineConfig({
       // Keep public/manifest.webmanifest (linked from index.html) as the only manifest.
       manifest: false,
       workbox: {
-        // App shell + the MediaPipe Face Mesh runtime/model copied into public/mediapipe.
-        globPatterns: ['**/*.{js,css,html,svg,webmanifest,wasm,data,binarypb,tflite}'],
-        // The Face Mesh .wasm files are about 6 MB each (Workbox default limit is 2 MiB).
+        // App shell + the MediaPipe Face Mesh runtime/model copied into public/mediapipe + the recorded interview
+        // clips in public/audio (mp3 only; the folder's .gitkeep files are not matched).
+        globPatterns: ['**/*.{js,css,html,svg,webmanifest,wasm,data,binarypb,tflite}', 'audio/**/*.mp3'],
+        // The Face Mesh .wasm files are about 6 MB each (Workbox default limit is 2 MiB); a ~30 s clip at 64 kbps
+        // is about 250 KB.
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         // Any navigation (e.g. /?demo=1) gets the cached app shell when offline.
         navigateFallback: 'index.html',

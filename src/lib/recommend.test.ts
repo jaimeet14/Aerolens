@@ -10,7 +10,7 @@ import { triage } from './triage';
 import type { Duochrome, EyeResult, Session } from './types';
 
 const eye = (logMAR: number | null, extra: Partial<EyeResult> = {}): EyeResult => ({
-  logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], ...extra,
+  logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], farPoint: null, ...extra,
 });
 const base: Session = {
   safetyFlags: [], correction: 'none', testedWith: 'none', pxPerMm: 5.85, dpr: 2, scaleSource: 'card', scaleSavedAt: null,

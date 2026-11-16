@@ -1,7 +1,7 @@
 import { fmt, PROGRESS, type Lang, type Text } from '../lib/i18n';
 
 const PHASES: readonly Text[] = [PROGRESS.setup, PROGRESS.calibrate, PROGRESS.right, PROGRESS.left, PROGRESS.fit];
-const SUBS = ['cover', 'acuity', 'astig', 'duo'] as const;
+const SUBS = ['cover', 'acuity', 'astig', 'duo', 'far'] as const;
 
 export type ProgressAt =
   | { stage: 'welcome' | 'safety' | 'referral' | 'interview' | 'scale' | 'camera' | 'fit' | 'results' }
