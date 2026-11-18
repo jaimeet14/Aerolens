@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { blurredFarPoint, clearFarPoint, measuredFarPoint } from './farpoint';
 import { acuityText, logMARText, snellenOf, triage } from './triage';
-import type { Eye, EyeResult } from './types';
+import type { Correction, Eye, EyeResult, Session, TestedWith } from './types';
 
 const eye = (logMAR: number | null, extra: Partial<EyeResult> = {}): EyeResult => ({
   logMAR, limited: false, astigmatism: { present: false, lines: [], axisDeg: null }, duochrome: 'equal', acuityAnswers: [], farPoint: null, ...extra,
@@ -326,9 +326,11 @@ describe('far point (16 Nov 2026): a measured −1.5 D or stronger raises ok to 
     expect(triage([], { right: eye(0, { farPoint: far(65) }), left: eye(0) }).level).toBe('ok'); // 'beyond'
   });
   it('"Still clear", "Already blurred", skipped and missing (older reports) add nothing', () => {
-    for (const farPoint of [clearFarPoint(70), clearFarPoint(45), blurredFarPoint(18), null, undefined]) {
+    for (const farPoint of [clearFarPoint(70), blurredFarPoint(18), null, undefined]) {
       expect(triage([], { right: eye(0, { farPoint: farPoint as never }), left: eye(0) })).toEqual({ level: 'ok', headline: OK, reasons: [], notes: [] });
     }
+    // "Still clear" closer than 65 cm: still no level change or reason, only a note (18 Nov 2026, see below).
+    expect(triage([], { right: eye(0, { farPoint: clearFarPoint(45) }), left: eye(0) })).toMatchObject({ level: 'ok', headline: OK, reasons: [] });
   });
   it('never lowers a level and never refers; red flags still refer first', () => {
     expect(triage([], { right: eye(0.6, { farPoint: far(30) }), left: eye(0) }).level).toBe('refer');
@@ -343,5 +345,114 @@ describe('far point (16 Nov 2026): a measured −1.5 D or stronger raises ok to 
     expect(t.reasons).toEqual([
       'दाईं आँख: 42 cm से आगे अक्षर धुंधले हो गए, यानी लगभग −2.25 D का मायोपिया (दूर का कम दिखना) हो सकता है (मोटा अंदाज़ा, चश्मे का नंबर नहीं)। पास की नज़र (50 cm) की जाँच में यह छूट सकता है।',
     ]);
+  });
+});
+
+describe("far point checked short of arm's length (18 Nov 2026): a note, never a level change", () => {
+  const short = (e: string, cm: number, d: string) =>
+    `${e} eye: far point checked only out to ${cm} cm, so short sight up to about ${d} D is not ruled out.`;
+
+  it('"Still clear" below 65 cm adds a note per eye, right first; the level stays ok', () => {
+    expect(triage([], { right: eye(0, { farPoint: clearFarPoint(46) }), left: eye(0, { farPoint: clearFarPoint(45) }) })).toEqual({
+      level: 'ok', headline: OK, reasons: [], notes: [short('Right', 46, '−2.00'), short('Left', 45, '−2.00')],
+    });
+    expect(triage([], { right: eye(0), left: eye(0, { farPoint: clearFarPoint(30) }) }).notes).toEqual([short('Left', 30, '−3.25')]);
+    expect(triage([], { right: eye(0, { farPoint: clearFarPoint(64) }), left: eye(0) }).notes).toEqual([short('Right', 64, '−1.50')]);
+  });
+  it('no note at or beyond 65 cm, for a measured or "Already blurred" result, skipped or missing', () => {
+    for (const farPoint of [clearFarPoint(65), clearFarPoint(80), measuredFarPoint([70, 66, 68]), measuredFarPoint([42]), blurredFarPoint(18), null, undefined]) {
+      expect(triage([], { right: eye(0, { farPoint: farPoint as never }), left: eye(0) }).notes).toEqual([]);
+    }
+  });
+  it('never changes a level: advise and refer stay, with the note added', () => {
+    const fp = clearFarPoint(46);
+    expect(triage([], { right: eye(0.1, { farPoint: fp }), left: eye(0) })).toMatchObject({ level: 'advise', notes: [short('Right', 46, '−2.00')] });
+    expect(triage([], { right: eye(0.6, { farPoint: fp }), left: eye(0) })).toMatchObject({ level: 'refer', notes: [short('Right', 46, '−2.00')] });
+    // After a dial note in the same eye.
+    const dial = { present: true, lines: [3], axisDeg: 90 };
+    expect(triage([], { right: eye(0, { astigmatism: dial, farPoint: fp }), left: eye(0) }).notes).toEqual([
+      'Right eye: some dial lines looked darker — possible mild astigmatism. Mention it at your next eye check.',
+      short('Right', 46, '−2.00'),
+    ]);
+  });
+  it('a red flag refers with no notes', () => {
+    expect(triage(['Double vision'], { right: eye(0, { farPoint: clearFarPoint(46) }), left: eye(0) }).notes).toEqual([]);
+  });
+  it('Hindi: the same note with the same numbers', () => {
+    expect(triage([], { right: eye(0, { farPoint: clearFarPoint(46) }), left: eye(0) }, 500, 'hi').notes).toEqual([
+      'दाईं आँख: धुंधला होने की दूरी सिर्फ़ 46 cm तक जाँची गई, इसलिए लगभग −2.00 D तक का मायोपिया (दूर का कम दिखना) न होने की बात पक्की नहीं है।',
+    ]);
+  });
+});
+
+describe('usual wear (18 Nov 2026): glasses or contacts, tested without them, ok -> advise', () => {
+  const GLASSES = 'You usually wear glasses but read well without them at 50 cm. This is common with glasses for long sight, reading or mild astigmatism, which this screening cannot measure: take your glasses to an eye test.';
+  const CONTACTS = 'You usually wear contact lenses but read well without them at 50 cm. This is common with lenses for long sight, reading or mild astigmatism, which this screening cannot measure: take your contact lens details to an eye test.';
+  const wear = (correction: Correction | null, testedWith: TestedWith | null) => ({ correction, testedWith });
+
+  it('glasses, tested without: advise with the glasses reason', () => {
+    expect(triage([], both(0, 0), 500, 'en', wear('glasses', 'none'))).toEqual({ level: 'advise', headline: ADVISE, reasons: [GLASSES], notes: [] });
+  });
+  it('contact lenses, taken out for the test: advise with the contact-lens reason', () => {
+    expect(triage([], both(0, 0), 500, 'en', wear('contacts', 'none'))).toEqual({ level: 'advise', headline: ADVISE, reasons: [CONTACTS], notes: [] });
+  });
+  it('nothing without the wear, for no usual wear, when tested with contacts in, or with an answer missing', () => {
+    const ok = { level: 'ok', headline: OK, reasons: [], notes: [] };
+    expect(triage([], both(0, 0))).toEqual(ok);
+    expect(triage([], both(0, 0), 500, 'en', null)).toEqual(ok);
+    for (const w of [wear('none', 'none'), wear('contacts', 'contacts'), wear('glasses', 'contacts'), wear(null, 'none'), wear('glasses', null), wear(null, null)]) {
+      expect(triage([], both(0, 0), 500, 'en', w), JSON.stringify(w)).toEqual(ok);
+    }
+  });
+  it('only an ok that every other rule left alone: advise and refer keep their own reasons, without the wear reason', () => {
+    const w = wear('glasses', 'none');
+    expect(triage([], both(0.2, 0.2), 500, 'en', w)).toEqual(triage([], both(0.2, 0.2)));
+    expect(triage([], both(0.6, 0.6), 500, 'en', w)).toEqual(triage([], both(0.6, 0.6)));
+    const far = { right: eye(0, { farPoint: measuredFarPoint([42]) }), left: eye(0) };
+    expect(triage([], far, 500, 'en', w)).toEqual(triage([], far));
+    expect(triage(['Double vision'], both(0, 0), 500, 'en', w)).toEqual({
+      level: 'refer', headline: 'Please see an eye doctor first', reasons: ['You reported: double vision'], notes: [],
+    });
+  });
+  it('keeps the notes of an ok result (dial note at 6/6) and adds the reason', () => {
+    const r = { right: eye(0, { astigmatism: { present: true, lines: [3], axisDeg: 90 } }), left: eye(0) };
+    expect(triage([], r, 500, 'en', wear('glasses', 'none'))).toEqual({
+      level: 'advise', headline: ADVISE, reasons: [GLASSES], notes: triage([], r).notes,
+    });
+  });
+  it('the distance in the reason follows targetMm; a whole Session can be passed as the wear', () => {
+    expect(triage([], both(0, 0), 400, 'en', wear('glasses', 'none')).reasons[0]).toContain('without them at 40 cm.');
+    const session: Pick<Session, 'correction' | 'testedWith' | 'demo' | 'safetyFlags'> = {
+      correction: 'contacts', testedWith: 'none', demo: false, safetyFlags: [],
+    };
+    expect(triage([], both(0, 0), 500, 'en', session).reasons).toEqual([CONTACTS]);
+  });
+  it('Hindi: same level, the Hindi reason', () => {
+    expect(triage([], both(0, 0), 500, 'hi', wear('glasses', 'none'))).toEqual({
+      level: 'advise',
+      headline: 'चश्मे से मदद मिल सकती है: जब हो सके, आँखों की जाँच करवाएँ',
+      reasons: ['आप आमतौर पर चश्मा पहनते हैं, फिर भी 50 cm पर बिना चश्मे के ठीक से पढ़ पाए। पास का कम दिखने (हाइपरोपिया), पढ़ने या हल्के एस्टिग्मैटिज़्म (सिलेंडर नंबर) के चश्मे में ऐसा अक्सर होता है, और यह जाँच इन्हें नाप नहीं सकती: अपना चश्मा लेकर आँखों की जाँच करवाएँ।'],
+      notes: [],
+    });
+    expect(triage([], both(0, 0), 500, 'hi', wear('contacts', 'none')).level).toBe('advise');
+  });
+
+  // Validation V6 (docs/validation.md): R +1.00/−0.50×70, L +1.75/−0.50×100, age 18–39, usually wears glasses, tested
+  // without them; 6/6 both eyes at 50 cm, dial even, duochrome same, "Still clear at arm's length" at 46 cm (R), 45 cm (L).
+  describe('regression: V6 (hyperope, glasses, 6/6 unaided at 50 cm) is advise, not "No concern"', () => {
+    const v6 = {
+      right: eye(0, { duochrome: 'equal', farPoint: clearFarPoint(46) }),
+      left: eye(0, { duochrome: 'equal', farPoint: clearFarPoint(45) }),
+    };
+    const notes = [
+      'Right eye: far point checked only out to 46 cm, so short sight up to about −2.00 D is not ruled out.',
+      'Left eye: far point checked only out to 45 cm, so short sight up to about −2.00 D is not ruled out.',
+    ];
+    it('with the wear: advise, the glasses reason and two far-point notes', () => {
+      expect(triage([], v6, 500, 'en', wear('glasses', 'none'))).toEqual({ level: 'advise', headline: ADVISE, reasons: [GLASSES], notes });
+    });
+    it('without the wear: still ok, with the two far-point notes', () => {
+      expect(triage([], v6)).toEqual({ level: 'ok', headline: OK, reasons: [], notes });
+    });
   });
 });

@@ -85,6 +85,7 @@ describe('string tables', () => {
     for (const l of LANGS) expect(SCREENS.scale.step4[l]).toContain(`**${SCREENS.scale.done[l]}**`);
     for (const l of LANGS) expect(SCREENS.calibration.step3[l]).toContain(`**${SCREENS.calibration.button[l]}**`);
     for (const l of LANGS) expect(SCREENS.farPoint.step4[l]).toContain(`**${SCREENS.farPoint.blurred[l]}**`);
+    for (const l of LANGS) expect(SCREENS.farPoint.furtherAsk[l]).toContain(`**${SCREENS.farPoint.blurred[l]}**`);
   });
 });
 
@@ -132,6 +133,7 @@ const RESULT_SETS: [EyeResult, EyeResult][] = [
   [eye(0), eye(0)], [eye(0.2), eye(0.2)], [eye(0.6), eye(0)], [eye(null), eye(0.1, { astigmatism: dark([2, 3], 75) })],
   [eye(0, { astigmatism: dark([6], 180) }), eye(0.2, { limited: true, duochrome: 'green' })], [eye(0.3, { duochrome: 'red' }), eye(0.1, { duochrome: 'green' })],
   [eye(0, { farPoint: measuredFarPoint([42, 40, 45]) }), eye(0, { farPoint: clearFarPoint(70) })], [eye(0.1, { farPoint: blurredFarPoint(18) }), eye(0, { farPoint: measuredFarPoint([40, 45]) })],
+  [eye(0, { farPoint: clearFarPoint(46) }), eye(0, { farPoint: clearFarPoint(45) })],
 ];
 const INTERVIEWS: (Interview | null)[] = [
   null, ask, { ...ask, ageBand: '60+', complaints: [] }, { ...ask, ageBand: 'under18', screenHours: 'lt2', nightDriving: false, outdoors: 'little' },
@@ -149,10 +151,11 @@ function samePairs(en: string[], hi: string[], what: string) {
 
 describe('triage in Hindi', () => {
   it('same level, Hindi words, same numbers; English by default is unchanged', () => {
-    for (const [r, l] of RESULT_SETS) for (const t of [500, 400]) {
+    const wears = [null, { correction: 'glasses', testedWith: 'none' }, { correction: 'contacts', testedWith: 'none' }] as const;
+    for (const [r, l] of RESULT_SETS) for (const t of [500, 400]) for (const w of wears) {
       const res = { right: r, left: l };
-      const en = triage([], res, t), hi = triage([], res, t, 'hi');
-      expect(triage([], res, t, 'en')).toEqual(en);
+      const en = triage([], res, t, 'en', w), hi = triage([], res, t, 'hi', w);
+      if (!w) expect(triage([], res, t)).toEqual(en);
       expect(hi.level).toBe(en.level);
       samePairs([en.headline, ...en.reasons, ...en.notes], [hi.headline, ...hi.reasons, ...hi.notes], 'triage');
     }

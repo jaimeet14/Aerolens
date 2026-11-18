@@ -320,7 +320,7 @@ function frameItem(fit: FitCapture, lang: Lang): RecItem {
 
 /**
  * Explainable lens, lens-option and frame suggestions. PROVISIONAL rules (see the top of this file).
- * `triage` is triage(session.safetyFlags, session.results, session.targetMm); only its level is used.
+ * `triage` is triage(session.safetyFlags, session.results, session.targetMm, lang, session); only its level is used.
  * `interview` is session.interview (null when the questions were skipped). Never outputs lens powers.
  * `lang` changes the words only; the report stores the English ('en', the default).
  */

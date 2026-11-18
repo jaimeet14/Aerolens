@@ -4,7 +4,8 @@ import { answer, initAcuity, LINES, MIN_STROKE_PX, nextDir, PER_LINE, screenLimi
 import { dialLineWidthMm, lineLabelIn, lineOfHour, pickedAnswer, toggleLine } from '../lib/dial';
 import { DUO_GREEN_CSS, DUO_INK_CSS, DUO_RED_CSS } from '../lib/duochrome';
 import {
-  blurredFarPoint, clearFarPoint, FAR_NEAREST_CM, FAR_TRIALS, farPointLetterMm, measuredFarPoint, trialCm, type FarPoint,
+  blurredFarPoint, clearFarPoint, FAR_BEYOND_CM, FAR_NEAREST_CM, FAR_TRIALS, farPointLetterMm, measuredFarPoint, needsFurther, trialCm,
+  type FarPoint,
 } from '../lib/farpoint';
 import { ACUITY, COVER, DIAL, DIR_TEXT, DUO, EYE, FAR, fmt, type Lang } from '../lib/i18n';
 import { landoltDiameterMm } from '../lib/landolt';
@@ -314,8 +315,12 @@ const dirLine = () => { const d: Dir[] = []; for (let i = 0; i < FAR_LINE; i++) 
  * 0.1 logMAR at 65 cm, about 1.19 mm), spaced one letter apart. The person starts close, slowly moves the phone away and taps
  * "Blurred now" at the first blur; FAR_TRIALS trials (a new line each time), then the median (measuredFarPoint).
  * "Still clear at arm's length" and "Already blurred" end the step with that outcome; "Skip this step" gives null.
- * Every tap except Skip needs a face and a distance in range (trialCm); otherwise it is ignored and says why.
- * Demo mode: the distance is fixed at 50 cm, so three taps give 50 cm (about −2.00 D).
+ * "Still clear" closer than FAR_BEYOND_CM (needsFurther) does not end the step: it asks for the phone further away and
+ * offers "I can't hold it further", which ends with "Still clear" at the last tapped distance; a later "Blurred now"
+ * tap hides the request.
+ * Every tap except Skip and "I can't hold it further" needs a face and a distance in range (trialCm); otherwise it is
+ * ignored and says why.
+ * Demo mode: the distance is fixed at 50 cm, so three taps give 50 cm (about −2.00 D), and "Still clear" asks for more.
  */
 export function FarPointTest({ lang, eye, chart, iris, pxPerMm, onDone }: {
   lang: Lang; eye: Eye; chart: Chart; iris: Iris; pxPerMm: number; onDone: (r: FarPoint | null) => void;
@@ -324,6 +329,8 @@ export function FarPointTest({ lang, eye, chart, iris, pxPerMm, onDone }: {
   const [trials, setTrials] = useState<number[]>([]);
   const [line, setLine] = useState(() => ({ letters: letterLine(), dirs: dirLine() }));
   const [needFace, setNeedFace] = useState(false);
+  /** The distance of a "Still clear" tap that was too close to end the step (needsFurther); null when none is pending. */
+  const [shortClear, setShortClear] = useState<number | null>(null);
   const sizeMm = farPointLetterMm();
   const sizeCss = sizeMm * pxPerMm;
   // Same rule as the acuity chart's screen limit; warned, not blocked (larger-looking letters only make the estimate weaker).
@@ -339,12 +346,19 @@ export function FarPointTest({ lang, eye, chart, iris, pxPerMm, onDone }: {
     if (c === null) return;
     const next = [...trials, c];
     if (next.length >= FAR_TRIALS) return onDone(measuredFarPoint(next));
+    setShortClear(null);
     setTrials(next);
     setLine({ letters: letterLine(), dirs: dirLine() });
   };
   const endWith = (make: (c: number) => FarPoint | null) => {
     const c = tapCm();
     if (c !== null) onDone(make(c));
+  };
+  const stillClear = () => {
+    const c = tapCm();
+    if (c === null) return;
+    if (needsFurther(c)) return setShortClear(c);
+    onDone(clearFarPoint(c));
   };
   return (
     <div>
@@ -376,9 +390,15 @@ export function FarPointTest({ lang, eye, chart, iris, pxPerMm, onDone }: {
       </div>
       {coarse && <p className="mt-2 text-center text-sm text-amber-900">{T.coarse[lang]}</p>}
       {needFace && <p role="alert" className="mt-2 text-center text-sm text-red-700">{T.needFace[lang]}</p>}
+      {shortClear !== null && (
+        <div role="status" className="mt-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
+          <p><Rich text={fmt(T.furtherAsk[lang], { cm: shortClear, max: FAR_BEYOND_CM })} /></p>
+          <button className="btn btn-ghost mt-2 w-full text-sm" onClick={() => onDone(clearFarPoint(shortClear))}>{T.cantFurther[lang]}</button>
+        </div>
+      )}
       <button className="btn btn-primary mt-3 min-h-14 w-full text-lg" onClick={blurredNow}>{T.blurred[lang]}</button>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <button className="btn btn-ghost px-3 text-sm" onClick={() => endWith(clearFarPoint)}>{T.stillClear[lang]}</button>
+        <button className="btn btn-ghost px-3 text-sm" onClick={stillClear}>{T.stillClear[lang]}</button>
         <button className="btn btn-ghost px-3 text-sm" onClick={() => endWith(blurredFarPoint)}>{T.alreadyBlurred[lang]}</button>
       </div>
       <button className="btn btn-ghost mt-2 w-full" onClick={() => onDone(null)}>{T.skip[lang]}</button>

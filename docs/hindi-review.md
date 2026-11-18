@@ -4,10 +4,10 @@ For a native Hindi speaker to check. Each table lists one screen: the key (where
 source, and the Hindi shown when the customer picks हिन्दी on the welcome screen. Aim: simple everyday Hindi that a small-town
 customer at an optical counter understands, in the same style as the interview text (section 4), which was already approved.
 
-413 strings in 18 sections. Generated from the string tables on 15 Nov 2026 (triage headlines, the two difference
+418 strings in 19 sections. Generated from the string tables on 15 Nov 2026 (triage headlines, the two difference
 reasons and REC_TEXT.eyeTestFirst changed later the same day; the three interview sound buttons UI.playAgain, UI.soundOff and
 UI.soundOn added later the same day, not yet checked; the 26 far-point strings in section 18 added 16 Nov 2026, not yet
-checked); if you change a Hindi string,
+checked; the 5 strings in section 19 added 18 Nov 2026, not yet checked); if you change a Hindi string,
 change it in the file named under the section title (the key says which entry) and update this file.
 
 ## How to read the tables
@@ -47,6 +47,7 @@ change it in the file named under the section title (the key says which entry) a
 | far point (where the letters start to blur) | धुंधला होने की दूरी | new, 16 Nov 2026 |
 | short sight (myopia) | दूर का कम दिखना (मायोपिया) | as in the red-green notes |
 | rough estimate | मोटा अंदाज़ा | |
+| (short sight) is not ruled out | (मायोपिया) न होने की बात पक्की नहीं है | new, 18 Nov 2026 |
 | calibrate | सेट करना | |
 | Landolt C ring, its gap | छल्ला, खुला हिस्सा | |
 | cheekbone width | गालों की चौड़ाई | |
@@ -597,3 +598,20 @@ New 16 Nov 2026, not yet checked. In FARPOINT_TEXT `{cm}` is the distance (42 or
 | FARPOINT_TEXT.blurred | Blurred even at {cm} cm: possibly stronger than about {d} D, or the phone was too close to focus; not a prescription | {cm} cm पर भी धुंधला: शायद लगभग {d} D से ज़्यादा, या फ़ोन फ़ोकस के लिए बहुत पास था; चश्मे का नंबर नहीं |
 | FARPOINT_TEXT.skipped | Skipped | छोड़ दिया गया |
 | TRIAGE_TEXT.farPoint | {eye} eye: the letters blurred beyond {cm} cm, which suggests short sight of about {d} D (a rough estimate, not a prescription). The {near} test can miss this. | {eye}: {cm} cm से आगे अक्षर धुंधले हो गए, यानी लगभग {d} D का मायोपिया (दूर का कम दिखना) हो सकता है (मोटा अंदाज़ा, चश्मे का नंबर नहीं)। {near} की जाँच में यह छूट सकता है। |
+
+## 19. Far point held too close, and usual glasses (far-point step; results and triage)
+
+Code: src/lib/i18n.ts FAR.furtherAsk, FAR.cantFurther; src/lib/triage.ts TRIAGE_TEXT.farPointShort, TRIAGE_TEXT.wearGlasses, TRIAGE_TEXT.wearContacts
+
+New 18 Nov 2026 (validation V6), not yet checked. FAR.furtherAsk is shown when "Still clear at arm's length" is tapped closer than
+65 cm: `{cm}` is that distance (46) and `{max}` is 65; **अब धुंधला है** is the FAR.blurred button. FAR.cantFurther is the button that
+then ends the step. In TRIAGE_TEXT.farPointShort `{eye}` is as in section 15, `{cm}` the distance and `{d}` a power such as −2.00. In
+TRIAGE_TEXT.wearGlasses and TRIAGE_TEXT.wearContacts `{cm}` is 50; "long sight" is पास का कम दिखना (हाइपरोपिया) as in the word list.
+
+| Key | English | Hindi |
+|---|---|---|
+| FAR.furtherAsk | Only {cm} cm. Hold the phone further away, up to {max} cm if you can (stretch your arm, or ask the staff to hold it). Then tap again, or tap **Blurred now** if the letters blur. | सिर्फ़ {cm} cm। हो सके तो फ़ोन को और दूर, {max} cm तक ले जाएँ (हाथ पूरा फैलाएँ, या स्टाफ़ से फ़ोन पकड़ने को कहें)। फिर से दबाएँ, या अक्षर धुंधले हो जाएँ तो **अब धुंधला है** दबाएँ। |
+| FAR.cantFurther | I can't hold it further | इससे दूर ले जाना मुमकिन नहीं |
+| TRIAGE_TEXT.farPointShort | {eye} eye: far point checked only out to {cm} cm, so short sight up to about {d} D is not ruled out. | {eye}: धुंधला होने की दूरी सिर्फ़ {cm} cm तक जाँची गई, इसलिए लगभग {d} D तक का मायोपिया (दूर का कम दिखना) न होने की बात पक्की नहीं है। |
+| TRIAGE_TEXT.wearGlasses | You usually wear glasses but read well without them at {cm} cm. This is common with glasses for long sight, reading or mild astigmatism, which this screening cannot measure: take your glasses to an eye test. | आप आमतौर पर चश्मा पहनते हैं, फिर भी {cm} cm पर बिना चश्मे के ठीक से पढ़ पाए। पास का कम दिखने (हाइपरोपिया), पढ़ने या हल्के एस्टिग्मैटिज़्म (सिलेंडर नंबर) के चश्मे में ऐसा अक्सर होता है, और यह जाँच इन्हें नाप नहीं सकती: अपना चश्मा लेकर आँखों की जाँच करवाएँ। |
+| TRIAGE_TEXT.wearContacts | You usually wear contact lenses but read well without them at {cm} cm. This is common with lenses for long sight, reading or mild astigmatism, which this screening cannot measure: take your contact lens details to an eye test. | आप आमतौर पर कॉन्टैक्ट लेंस पहनते हैं, फिर भी {cm} cm पर बिना लेंस के ठीक से पढ़ पाए। पास का कम दिखने (हाइपरोपिया), पढ़ने या हल्के एस्टिग्मैटिज़्म (सिलेंडर नंबर) के लेंस में ऐसा अक्सर होता है, और यह जाँच इन्हें नाप नहीं सकती: अपने कॉन्टैक्ट लेंस की जानकारी लेकर आँखों की जाँच करवाएँ। |

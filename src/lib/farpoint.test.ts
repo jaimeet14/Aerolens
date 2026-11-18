@@ -3,8 +3,9 @@ import hindiReview from '../../docs/hindi-review.md?raw';
 import { FAR, RESULTS } from './i18n';
 import { TRIAGE_TEXT } from './triage';
 import {
-  blurredFarPoint, clearFarPoint, cmText, dioptreText, FAR_ADVISE_D, FAR_BEYOND_CM, FAR_NEAREST_CM, FAR_TRIALS, farPointAdvises, farPointBoundD,
-  farPointLetterMm, farPointText, FARPOINT_TEXT, isFarPoint, measuredFarPoint, sphereD, trialCm, type FarPoint,
+  blurredFarPoint, clearFarPoint, cmText, dioptreText, FAR_ADVISE_D, FAR_BEYOND_CM, FAR_MAX_CM, FAR_MIN_CM, FAR_NEAREST_CM, FAR_TRIALS,
+  farPointAdvises, farPointBoundD, farPointCheckedShort, farPointLetterMm, farPointText, FARPOINT_TEXT, isFarPoint, measuredFarPoint,
+  needsFurther, sphereD, trialCm, type FarPoint,
 } from './farpoint';
 import { ARCMIN, optotypeHeightMm } from './optics';
 
@@ -68,6 +69,42 @@ describe('"Still clear" and "Already blurred"', () => {
     expect(farPointBoundD(blurredFarPoint(15)!)).toBe(-5);
     expect(farPointBoundD(blurredFarPoint(30)!)).toBe(-3.25);
     expect(farPointBoundD(measuredFarPoint([42])!)).toBeNull();
+  });
+});
+
+describe('"Still clear" closer than arm\'s length (18 Nov 2026, validation V6)', () => {
+  it(`needsFurther: below ${FAR_BEYOND_CM} cm asks for the phone further away; at or beyond it the tap ends the step`, () => {
+    expect(needsFurther(46)).toBe(true);
+    expect(needsFurther(45)).toBe(true);
+    expect(needsFurther(FAR_MIN_CM)).toBe(true);
+    expect(needsFurther(FAR_BEYOND_CM - 1)).toBe(true);
+    expect(needsFurther(FAR_BEYOND_CM)).toBe(false);
+    expect(needsFurther(80)).toBe(false);
+    expect(needsFurther(FAR_MAX_CM)).toBe(false);
+  });
+  it('needsFurther is false for a distance the screen never records (out of range or not finite)', () => {
+    for (const cm of [FAR_MIN_CM - 1, 0, -5, NaN, Infinity, FAR_MAX_CM + 1]) expect(needsFurther(cm), String(cm)).toBe(false);
+  });
+  it('a short "Still clear" only rules out short sight stronger than the triage threshold', () => {
+    // 46 cm (V6): weaker than about −2.00 D, so a −1.5 to −2 D eye is not ruled out; at 65 cm the bound reaches −1.5 D.
+    expect(farPointBoundD(clearFarPoint(46)!)).toBe(-2);
+    expect(farPointBoundD(clearFarPoint(46)!)!).toBeLessThan(FAR_ADVISE_D);
+    expect(farPointBoundD(clearFarPoint(FAR_BEYOND_CM)!)).toBe(FAR_ADVISE_D);
+    // Every "Still clear" that ends the step at once supports the full claim: short sight, if any, weaker than −1.5 D.
+    for (let cm = FAR_MIN_CM; cm <= FAR_MAX_CM; cm++) {
+      if (!needsFurther(cm)) expect(farPointBoundD(clearFarPoint(cm)!), String(cm)).toBe(FAR_ADVISE_D);
+    }
+  });
+  it('farPointCheckedShort: only a "beyond" whose median is below arm\'s length', () => {
+    expect(farPointCheckedShort(clearFarPoint(46))).toBe(true);
+    expect(farPointCheckedShort(clearFarPoint(FAR_BEYOND_CM - 1))).toBe(true);
+    expect(farPointCheckedShort(clearFarPoint(FAR_BEYOND_CM))).toBe(false);
+    expect(farPointCheckedShort(clearFarPoint(80))).toBe(false);
+    expect(farPointCheckedShort(measuredFarPoint([66, 70, 64]))).toBe(false); // 'beyond' from trials: median 66
+    expect(farPointCheckedShort(measuredFarPoint([42]))).toBe(false);
+    expect(farPointCheckedShort(blurredFarPoint(18))).toBe(false);
+    expect(farPointCheckedShort(null)).toBe(false);
+    expect(farPointCheckedShort(undefined)).toBe(false);
   });
 });
 
@@ -162,6 +199,9 @@ describe('docs/hindi-review.md', () => {
       ['RESULTS.farPoint', RESULTS.farPoint], ['RESULTS.farPointContacts', RESULTS.farPointContacts],
       ...Object.entries(FARPOINT_TEXT).map(([k, t]) => [`FARPOINT_TEXT.${k}`, t] as [string, { en: string; hi: string }]),
       ['TRIAGE_TEXT.farPoint', TRIAGE_TEXT.farPoint],
+      // 18 Nov 2026 (section 19): the short far-point note and the usual-wear reasons.
+      ['TRIAGE_TEXT.farPointShort', TRIAGE_TEXT.farPointShort],
+      ['TRIAGE_TEXT.wearGlasses', TRIAGE_TEXT.wearGlasses], ['TRIAGE_TEXT.wearContacts', TRIAGE_TEXT.wearContacts],
     ];
     const doc = hindiReview.replace(/\r\n/g, '\n');
     for (const [key, t] of rows) expect(doc, key).toContain(`| ${key} | ${t.en} | ${t.hi} |`);

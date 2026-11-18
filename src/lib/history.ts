@@ -58,10 +58,11 @@ export function newSessionId(rand: () => number = Math.random): string {
 
 /**
  * The history entry for a finished session: the same triage, recommendation (with the interview) and report the
- * results screen shows and exports.
+ * results screen shows and exports. The triage reads the usual-wear answers (session.correction / testedWith), as the
+ * results screen's translated triage does, so both agree.
  */
 export function sessionEntry(session: Session, meta: SessionMeta, device: Device, at: string): HistoryEntry {
-  const t = triage(session.safetyFlags, session.results, session.targetMm);
+  const t = triage(session.safetyFlags, session.results, session.targetMm, 'en', session);
   const rec = recommend(session, t, session.interview);
   return { id: meta.id, startedAt: meta.startedAt, savedAt: at, report: buildReport(session, t, device, at, rec) };
 }

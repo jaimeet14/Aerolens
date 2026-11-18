@@ -23,6 +23,7 @@ Comparing AeroLens results with each volunteer's known spectacle prescription an
 | V3 | 14 Nov 2026 | −3.00 / 0.00 | −3.50 / 0.00 | 6/19 / 6/12 (Tumbling E), triage refer | 6/7.5+ / 6/7.5+ (screen limit) | Even / Even | **Detects the −3 D myopia** (refer, R as predicted). L better than predicted; **duochrome green, not red** |
 | V4 | 15 Nov 2026 | −0.25 / −2.00 × 80, ADD +1.75 | 0.00 / −1.75 × 90, ADD +1.75 | 6/12 / 6/19 (Tumbling E), triage refer | not run | 1–7 & 2–8 (≈45°) / 5–11 & 6–12 (≈165°) | **Astigmatism detected in both eyes**, refer and progressive as predicted; **axis wrong** (≈90° expected); L worse than predicted |
 | V5 | 15 Nov 2026 | **not yet given** | **not yet given** | 6/12 / 6/19 (Sloan), triage refer | not run | 3–9 & 5–11 (unclear) / 3–9 & 4–10 (≈105°) | Can't judge without the prescription |
+| V6 | 18 Nov 2026 | +1.00 / −0.50 × 70 | +1.75 / −0.50 × 100 | 6/6 / 6/6 (Sloan), far point still clear at 46 / 45 cm, triage ok | not run | Even / Even | **Misses the hyperopia** (expected: a young eye focuses through +1.75 D at 50 cm); cyl −0.50 not flagged, like V1 |
 
 `6/6+` = 6/6 or better (the screen could not draw a smaller line).
 
@@ -233,3 +234,38 @@ Phone with a dense screen, brightness at maximum, night mode off, the newest ver
 
 - Acuity happens to be identical to V4 (6/12 / 6/19).
 - The right eye's two darker lines (3–9 and 5–11) aren't next to each other, so the app correctly gave no axis.
+
+---
+
+## V6 — 18 Nov 2026
+
+**Prescription (eye-hospital patient report, distance, corrected 6/6 each eye, no near addition):** R +1.00 / −0.50 × 70 · L +1.75 / −0.50 × 100. PD not given. Long sight (hyperopia) with a small cylinder, and the eyes differ by 0.75 D (spherical equivalent R +0.75 D, L +1.50 D).
+
+**Why this volunteer matters:** the first long-sighted volunteer. V1–V5 were short-sighted, astigmatic or presbyopic.
+
+**Not blind:** the report was open on the phone (screenshots 12:50) a few minutes before the run (12:56).
+
+### Run 1: without glasses (18 Nov 2026, 12:56–13:00 local)
+
+**Source:** printed staff summary (session f2e418b7), not the JSON. Letter chart (Sloan), tested without glasses (usual wear answered "glasses"), interview answered (age 18–39, screens 2–6 h, no night driving, very little time outdoors; headaches). Frame fit done.
+
+| | Right | Left |
+|---|---|---|
+| Acuity (50 cm) | **6/6** (logMAR 0.0) | **6/6** (logMAR 0.0) |
+| Dial | even | even |
+| Duochrome | same | same |
+| Far point | "Still clear at arm's length" at **46 cm**: short sight weaker than about −2.00 D | same, at **45 cm** |
+| Triage | **ok**, "No concern found today" | |
+| Lens suggestions | No lens indicated; headache note ("tell the optometrist") | |
+| Frame fit | PD 56.0 mm distance (R 27.5 / L 28.0), 54.5 mm measured at 46 cm; round face; narrow frame 120–128 mm | |
+
+### Findings
+- **Hyperopia missed: triage ok against a +1.00 / +1.75 prescription.** Expected for this design: at 50 cm the eye needs 2 D of focusing plus 1.0–1.75 D for the long sight, 3–3.75 D in all, well inside what an eye aged 18–39 can do (about 7 D or more). Uncorrected distance vision is often 6/6 too. Neither the acuity test nor the far-point step (which only looks for short sight) can find low hyperopia in a young adult. Optometrists find it with retinoscopy or plus lenses. **The app should not claim "no concern" covers long sight.**
+- **Duochrome "same" in both eyes:** the eyes focus through the test, so no green answer is expected. Not a failure, but no help either.
+- **Cylinder −0.50 not flagged (dial even):** as in V1 run 2. The dial does not detect 0.50 D cylinders. Not clinically important on its own.
+- **Anisometropia 0.75 D not seen:** both eyes 6/6.
+- **Far point: correct (no short sight), but the bound is weaker than the triage threshold.** Arm's length was only 45–46 cm, so "still clear" only rules out short sight stronger than about −2.00 D. A −1.5 to −2 D myope tapping at the same distance would also pass as ok, although `farPointAdvises` raises ok → advise from a measured −1.5 D.
+- **Usual wear "glasses" + 6/6 unaided + headaches → "no concern":** a combination the app could use. Someone who wears glasses but reads 6/6 at 50 cm without them likely has long sight, a small cylinder or a near prescription that this screening cannot measure.
+- **PD 56.0 mm:** plausible for an adult, but not checked (no PD on the report).
+- **Not checked:** head-tilt control (dial even), PD.
+- **Fixed 18 Nov 2026:** under the new rules this run is **advise** ("You usually wear glasses but read well without them at 50 cm…"), with a note per eye that the far point was checked only out to 46 / 45 cm, so short sight up to about −2.00 D is not ruled out. The far-point step now also asks to hold the phone out to 65 cm before accepting "Still clear". `triage.test.ts` replays V6. Hyperopia itself is still not measured.

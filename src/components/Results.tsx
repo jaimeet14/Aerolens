@@ -58,7 +58,8 @@ export function Results({ session, entry, saved, onRestart, onStaff }: {
   const stored = entry.report.triage;
   // Interview null (questions skipped): age unknown, so single-vision lenses only (see lib/recommend).
   const storedRec = entry.report.recommendation ?? recommend(session, stored, session.interview);
-  const t = lang === 'en' ? stored : triage(session.safetyFlags, session.results, session.targetMm, lang);
+  // Same arguments as lib/history sessionEntry (including the usual-wear answers), so the levels agree.
+  const t = lang === 'en' ? stored : triage(session.safetyFlags, session.results, session.targetMm, lang, session);
   const rec = lang === 'en' ? storedRec : recommend(session, stored, session.interview, lang);
   const cm = Math.round(session.targetMm / 10);
   const [copied, setCopied] = useState<'no' | 'yes' | 'failed'>('no');

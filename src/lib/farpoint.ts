@@ -10,6 +10,8 @@
  * FAR_DESIGN_MM). The person starts with the phone close, where the letters are clear, slowly moves it away and taps
  * "Blurred now" at the first blur; the camera's iris distance at that tap is one trial. FAR_TRIALS trials, median used.
  * "Still clear at arm's length" and "Already blurred" end the step with that outcome; "Skip this step" gives null.
+ * "Still clear" tapped closer than FAR_BEYOND_CM first asks for the phone further away (needsFurther); "I can't hold it
+ * further" then ends with that distance, and triage notes how far the check went (farPointCheckedShort).
  *
  * PROVISIONAL: every threshold here is a first draft, to be validated against refraction (docs/validation.md).
  * Known limits: the blur judgement itself (depth of focus about ±0.25–0.5 D); the iris-distance error (11.7 mm iris
@@ -105,6 +107,17 @@ export function measuredFarPoint(trials: number[]): FarPoint | null {
   return { trialsCm, medianCm, outcome: 'measured', estimateD, rangeD: [estimateD - FAR_RANGE_D, estimateD + FAR_RANGE_D] };
 }
 
+/**
+ * True when a "Still clear at arm's length" tap at `cm` is too close to end the step (added 18 Nov 2026, validation V6):
+ * clear only out to a distance below FAR_BEYOND_CM rules out short sight stronger than the power at `cm` (46 cm: about
+ * −2 D), not the −1.5 D (FAR_ADVISE_D) that advises. The screen then asks for the phone further away, up to FAR_BEYOND_CM,
+ * and offers "I can't hold it further", which ends with clearFarPoint at the last tapped distance. False at or beyond
+ * FAR_BEYOND_CM (the tap ends the step as before) and for a distance out of range (the screen never records one).
+ */
+export function needsFurther(cm: number): boolean {
+  return validCm(cm) && cm < FAR_BEYOND_CM;
+}
+
 /** "Still clear at arm's length", tapped at `cm`. Earlier "Blurred now" trials of the eye are not kept. */
 export function clearFarPoint(cm: number): FarPoint | null {
   return validCm(cm) ? { trialsCm: [cm], medianCm: cm, outcome: 'beyond', estimateD: null, rangeD: null } : null;
@@ -129,6 +142,15 @@ export function farPointBoundD(fp: FarPoint): number | null {
 /** True when the far point raises triage 'ok' to 'advise': a 'measured' estimate of FAR_ADVISE_D or stronger. */
 export function farPointAdvises(fp: FarPoint | null | undefined): fp is FarPoint & { estimateD: number } {
   return !!fp && fp.outcome === 'measured' && fp.estimateD !== null && fp.estimateD <= FAR_ADVISE_D + 1e-9;
+}
+
+/**
+ * True for a 'beyond' far point checked only short of FAR_BEYOND_CM ("Still clear" tapped closer, then "I can't hold it
+ * further", or a session from before 18 Nov 2026): short sight up to farPointBoundD (weaker than the −1.5 D that advises
+ * only from FAR_BEYOND_CM on) is not ruled out. Triage adds a note for it, never a level change.
+ */
+export function farPointCheckedShort(fp: FarPoint | null | undefined): fp is FarPoint {
+  return !!fp && fp.outcome === 'beyond' && fp.medianCm < FAR_BEYOND_CM;
 }
 
 /** Dioptres with two decimals and a real minus sign: −2.25, −1.50, 0.00. */

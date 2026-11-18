@@ -369,6 +369,12 @@ export const FAR = {
   stillClear: { en: "Still clear at arm's length", hi: 'हाथ भर की दूरी पर भी साफ़ है' },
   alreadyBlurred: { en: 'Already blurred', hi: 'पहले से धुंधला है' },
   skip: { en: 'Skip this step', hi: 'यह कदम छोड़ें' },
+  // "Still clear" tapped closer than {max} (FAR_BEYOND_CM, 65): {cm} is the tapped distance (lib/farpoint.ts needsFurther).
+  furtherAsk: {
+    en: 'Only {cm} cm. Hold the phone further away, up to {max} cm if you can (stretch your arm, or ask the staff to hold it). Then tap again, or tap **Blurred now** if the letters blur.',
+    hi: 'सिर्फ़ {cm} cm। हो सके तो फ़ोन को और दूर, {max} cm तक ले जाएँ (हाथ पूरा फैलाएँ, या स्टाफ़ से फ़ोन पकड़ने को कहें)। फिर से दबाएँ, या अक्षर धुंधले हो जाएँ तो **अब धुंधला है** दबाएँ।',
+  },
+  cantFurther: { en: "I can't hold it further", hi: 'इससे दूर ले जाना मुमकिन नहीं' },
   needFace: {
     en: 'The camera could not see your face, so nothing was recorded. Look at the screen and tap again.',
     hi: 'कैमरे को आपका चेहरा नहीं दिखा, इसलिए कुछ दर्ज नहीं हुआ। स्क्रीन की ओर देखें और फिर से दबाएँ।',

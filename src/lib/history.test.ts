@@ -6,7 +6,7 @@ import {
   addToHistory, CHART_TEXT, clearHistory, deleteFromHistory, HISTORY_KEY, HISTORY_MAX, HISTORY_REPORT_VERSIONS, historyTime, interviewRows,
   isHistoryEntry, loadHistory, newSessionId, parseHistory, sessionEntry, type HistoryEntry,
 } from './history';
-import { recommend, type Interview } from './recommend';
+import { EYE_TEST_FIRST_NOTE, recommend, type Interview } from './recommend';
 import type { StoreLike } from './storage';
 import { triage } from './triage';
 import type { EyeResult, Session } from './types';
@@ -63,6 +63,28 @@ describe('sessionEntry', () => {
     expect(e.report.recommendation).toEqual(recommend(s, e.report.triage, interview));
     expect(e.report.interview).toEqual(interview);
     expect(isHistoryEntry(e)).toBe(true);
+  });
+  it('passes the usual-wear answers to triage (18 Nov 2026): a glasses wearer at 6/6 without them is stored as advise', () => {
+    // V6-like: both eyes 6/6, "Still clear" at 46 / 45 cm, glasses usually, tested without; interview age 18–39.
+    const v6: Interview = { ageBand: '18-39', screenHours: '2to6', nightDriving: false, outdoors: 'little', complaints: ['headache'] };
+    const results = { right: eye(0, { farPoint: clearFarPoint(46) }), left: eye(0, { farPoint: clearFarPoint(45) }) };
+    const s = session({ correction: 'glasses', testedWith: 'none', results, interview: v6 });
+    const e = sessionEntry(s, { id: 'v6', startedAt: iso(0) }, device, iso(5));
+    expect(e.report.triage).toEqual(triage(s.safetyFlags, s.results, s.targetMm, 'en', s));
+    expect(e.report.triage.level).toBe('advise');
+    expect(e.report.triage.reasons).toEqual([
+      'You usually wear glasses but read well without them at 50 cm. This is common with glasses for long sight, reading or mild astigmatism, which this screening cannot measure: take your glasses to an eye test.',
+    ]);
+    expect(e.report.triage.notes).toHaveLength(2);
+    // The recommendation follows the level: a single-vision lens to discuss, after an eye test.
+    expect(e.report.recommendation?.status).toBe('suggest');
+    expect(e.report.recommendation?.items.map((i) => i.category)).toEqual(['Single-vision lens', 'Anti-reflective coating']);
+    expect(e.report.recommendation?.notes).toContain(EYE_TEST_FIRST_NOTE);
+    expect(isHistoryEntry(e)).toBe(true);
+    // The same results with no usual wear stay ok.
+    expect(sessionEntry({ ...s, correction: 'none' }, { id: 'n', startedAt: iso(0) }, device, iso(5)).report.triage.level).toBe('ok');
+    // Tested with contact lenses in: no wear reason.
+    expect(sessionEntry({ ...s, correction: 'contacts', testedWith: 'contacts' }, { id: 'c', startedAt: iso(0) }, device, iso(5)).report.triage.level).toBe('ok');
   });
   it('keeps the demo flag of a demo session', () => {
     expect(entry('d', 0, { demo: true }).report.demo).toBe(true);

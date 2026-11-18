@@ -1,6 +1,6 @@
-import type { Eye, EyeResult } from './types';
+import type { Correction, Eye, EyeResult, TestedWith } from './types';
 import { LINES, SNELLEN } from './acuity';
-import { cmText, dioptreText, farPointAdvises } from './farpoint';
+import { cmText, dioptreText, farPointAdvises, farPointBoundD, farPointCheckedShort } from './farpoint';
 import { fmt, type Lang, type Text } from './i18n';
 
 /**
@@ -39,6 +39,12 @@ export interface Triage {
   notes: string[];
 }
 
+/** The safety-screen wear answers triage reads (a Session fits as is): usual wear and what the eyes were tested with. */
+export interface TriageWear {
+  correction: Correction | null;
+  testedWith: TestedWith | null;
+}
+
 /** The eye as the triage sentences name it: "Right" (+ " eye ..." in the English sentence) / "दाईं आँख". */
 const EYE_WORD: Record<Eye, Text> = {
   right: { en: 'Right', hi: 'दाईं आँख' },
@@ -70,6 +76,18 @@ export const TRIAGE_TEXT = {
   farPoint: {
     en: '{eye} eye: the letters blurred beyond {cm} cm, which suggests short sight of about {d} D (a rough estimate, not a prescription). The {near} test can miss this.',
     hi: '{eye}: {cm} cm से आगे अक्षर धुंधले हो गए, यानी लगभग {d} D का मायोपिया (दूर का कम दिखना) हो सकता है (मोटा अंदाज़ा, चश्मे का नंबर नहीं)। {near} की जाँच में यह छूट सकता है।',
+  },
+  farPointShort: {
+    en: '{eye} eye: far point checked only out to {cm} cm, so short sight up to about {d} D is not ruled out.',
+    hi: '{eye}: धुंधला होने की दूरी सिर्फ़ {cm} cm तक जाँची गई, इसलिए लगभग {d} D तक का मायोपिया (दूर का कम दिखना) न होने की बात पक्की नहीं है।',
+  },
+  wearGlasses: {
+    en: 'You usually wear glasses but read well without them at {cm} cm. This is common with glasses for long sight, reading or mild astigmatism, which this screening cannot measure: take your glasses to an eye test.',
+    hi: 'आप आमतौर पर चश्मा पहनते हैं, फिर भी {cm} cm पर बिना चश्मे के ठीक से पढ़ पाए। पास का कम दिखने (हाइपरोपिया), पढ़ने या हल्के एस्टिग्मैटिज़्म (सिलेंडर नंबर) के चश्मे में ऐसा अक्सर होता है, और यह जाँच इन्हें नाप नहीं सकती: अपना चश्मा लेकर आँखों की जाँच करवाएँ।',
+  },
+  wearContacts: {
+    en: 'You usually wear contact lenses but read well without them at {cm} cm. This is common with lenses for long sight, reading or mild astigmatism, which this screening cannot measure: take your contact lens details to an eye test.',
+    hi: 'आप आमतौर पर कॉन्टैक्ट लेंस पहनते हैं, फिर भी {cm} cm पर बिना लेंस के ठीक से पढ़ पाए। पास का कम दिखने (हाइपरोपिया), पढ़ने या हल्के एस्टिग्मैटिज़्म (सिलेंडर नंबर) के लेंस में ऐसा अक्सर होता है, और यह जाँच इन्हें नाप नहीं सकती: अपने कॉन्टैक्ट लेंस की जानकारी लेकर आँखों की जाँच करवाएँ।',
   },
   differ2: { en: "The two eyes' {near} differs by two lines.", hi: 'दोनों आँखों की {near} में दो लाइनों का फ़र्क है।' },
   differ3: { en: "The two eyes' {near} differs by three or more lines.", hi: 'दोनों आँखों की {near} में तीन या ज़्यादा लाइनों का फ़र्क है।' },
@@ -131,13 +149,24 @@ export const DIFF_REFER = 0.3;
  * Far point (added 16 Nov 2026, PROVISIONAL): a 'measured' far-point estimate of FAR_ADVISE_D (−1.5 D) or stronger in
  * either eye (lib/farpoint.ts farPointAdvises) raises 'ok' to 'advise' with a reason, because the 50 cm acuity test
  * misses short sight up to about −2 D (known issue #1). It never lowers a level and never refers; 'beyond',
- * 'already-blurred', a skipped step (null) and reports without the field add nothing.
+ * 'already-blurred', a skipped step (null) and reports without the field add nothing to the level.
+ * A 'beyond' checked only short of FAR_BEYOND_CM (65 cm; farPointCheckedShort, added 18 Nov 2026, validation V6) adds a
+ * note, never a level change: short sight up to farPointBoundD (46 cm: about −2 D) is not ruled out.
+ *
+ * Usual wear (added 18 Nov 2026, PROVISIONAL, validation V6): `wear` is the safety-screen answers (Session correction
+ * and testedWith; null = not given, so older callers are unchanged). When, after every rule above, the level is still
+ * 'ok', and the person usually wears glasses or contact lenses ('glasses' | 'contacts') but was tested without them
+ * (testedWith 'none'), the level is raised to 'advise' with a reason: low long sight, a reading add or mild astigmatism
+ * can still read 6/6 at 50 cm, and this screening cannot measure them. It never lowers a level and never refers;
+ * nothing when tested with contact lenses in ('contacts'), when either answer is missing (null), or after red flags.
  *
  * `lang` changes only the words of headline, reasons and notes, never the level. The report and history always
  * store the English triage (lang 'en'); the results screen shows a second one in the session language.
  * `flags` are the stored English RED_FLAGS strings.
  */
-export function triage(flags: string[], results: Record<Eye, EyeResult>, targetMm = 500, lang: Lang = 'en'): Triage {
+export function triage(
+  flags: string[], results: Record<Eye, EyeResult>, targetMm = 500, lang: Lang = 'en', wear: TriageWear | null = null,
+): Triage {
   const T = TRIAGE_TEXT;
   if (flags.length > 0) {
     return {
@@ -183,6 +212,8 @@ export function triage(flags: string[], results: Record<Eye, EyeResult>, targetM
     if (farPointAdvises(fp)) {
       up('advise');
       reasons.push(fmt(T.farPoint[lang], { ...v, cm: cmText(fp.medianCm), d: dioptreText(fp.estimateD) }));
+    } else if (farPointCheckedShort(fp)) {
+      notes.push(fmt(T.farPointShort[lang], { ...v, cm: cmText(fp.medianCm), d: dioptreText(farPointBoundD(fp) ?? 0) }));
     }
   }
   const [a, b] = [results.right.logMAR, results.left.logMAR];
@@ -195,6 +226,11 @@ export function triage(flags: string[], results: Record<Eye, EyeResult>, targetM
       up('advise');
       reasons.push(fmt(T.differ2[lang], { near }));
     }
+  }
+  // Last: only an 'ok' that every other rule left alone (see the doc comment).
+  if (level === 'ok' && wear && wear.testedWith === 'none' && (wear.correction === 'glasses' || wear.correction === 'contacts')) {
+    up('advise');
+    reasons.push(fmt((wear.correction === 'glasses' ? T.wearGlasses : T.wearContacts)[lang], { cm: Math.round(targetMm / 10) }));
   }
 
   const headline =
