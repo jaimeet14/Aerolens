@@ -1,40 +1,140 @@
 @import "tailwindcss";
 
-/* Soft shapes, warm stone neutrals, one deep-teal accent for actions and progress.
-   Test stimuli (black E, white dial panel, red/green duochrome) are set in the components and must not use these tokens. */
+/* "Retinal coral": warm cream background, one coral accent for actions and progress, ocean blue for links.
+   Test stimuli (black E/letters/C, white dial panel, red/green duochrome) are set in the components and must not use these tokens. */
 @theme {
-  --color-cream: #f6f3ee;
+  --color-cream: #fff7f1;
+  --color-cream-2: #fce1d3;
   --color-surface: #ffffff;
-  --color-sunk: #f3efe9;
-  --color-line: #e8e2d9;
-  --color-ink: #1a1714;
-  --color-muted: #5f5850;
-  --color-subtle: #736b62;
-  --color-brand: #0f5c55;
-  --color-brand-hover: #0a4741;
-  --color-brand-soft: #ddede9;
+  --color-sunk: #fdede4;
+  --color-line: rgba(217, 72, 30, 0.18);
+  --color-ink: #2a1610;
+  --color-muted: #7a5a4e;
+  --color-subtle: #7a5a4e;
+  --color-brand: #d9481e;
+  --color-brand-hover: #a82c14;
+  --color-brand-deep: #a82c14;
+  --color-brand-light: #ffb08f;
+  --color-brand-pale: #f3cdbe;
+  --color-brand-soft: #ffe0d2;
+  --color-polyp: #ffe0d2;
+  --color-ocean: #1f5c7a;
+  --color-sky: #a6d8ea;
+  --color-alert: #c8321a;
+  --font-sans: "Plus Jakarta Sans", Mukta, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", "Kohinoor Devanagari", "Nirmala UI", Mangal, sans-serif;
 }
 
 html, body, #root { height: 100%; }
-/* System fonts only (works offline, nothing downloaded). The Latin fonts come first, so English looks as before; Hindi
-   (Devanagari) then falls to the phone's own Devanagari font: Noto Sans Devanagari (Android), Kohinoor Devanagari
-   (iOS/macOS), Nirmala UI or Mangal (Windows). Browsers also fall back per character, so a missing one is harmless. */
-body { background: var(--color-cream); color: var(--color-ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", "Kohinoor Devanagari", "Nirmala UI", Mangal, sans-serif; -webkit-tap-highlight-color: transparent; }
-/* In the components layer so utility classes on an element (px-2, rounded-2xl, ...) can override these. */
+/* Bundled fonts (src/main.tsx imports them from @fontsource; precached by the service worker, so they work offline):
+   Plus Jakarta Sans for Latin, Mukta for Devanagari (Plus Jakarta Sans has no Devanagari, so the browser falls back to Mukta
+   per character). The system fonts after them are only a last resort. */
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+/* Page background, fixed to the viewport. A fixed pseudo-element rather than background-attachment: fixed, which iOS Safari ignores.
+   <main> is `isolate`, so the decorative vessels (z-index -10 inside it) still paint above this layer. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 100% 0%, #a6d8ea 0, transparent 34%),
+    radial-gradient(circle at 0% 100%, #ffb08f 0, transparent 48%),
+    linear-gradient(160deg, #fff7f1, #fce1d3);
+}
+
+/* In the components layer so utility classes on an element (px-2, rounded-2xl, ...) can override these.
+   .btn / .card are the old pills and panels, still used by the screens not yet redesigned. */
 @layer components {
-  .btn { @apply rounded-full px-5 py-3.5 font-medium transition active:scale-95 disabled:opacity-40; }
-  .btn-primary { @apply bg-brand text-white hover:bg-brand-hover; }
+  .btn { @apply rounded-full px-5 py-3.5 font-semibold transition active:scale-95 disabled:opacity-40; }
+  .btn-primary { @apply bg-brand text-white hover:bg-brand-deep; }
   .btn-ghost { @apply bg-surface text-ink ring-1 ring-line hover:bg-sunk; }
   .card { @apply rounded-[22px] bg-surface p-6; }
+  /* Focus ring for the coral components (components/Coral.tsx). */
+  .al-focus { @apply outline-none focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-ocean; }
 }
+
+/* ---------- Decorative animation (components/Coral.tsx). Never used on a test page while a stimulus shows. ---------- */
+@keyframes al-flow { to { stroke-dashoffset: -40; } }
+@keyframes al-pulse {
+  from { transform: scale(1); opacity: 0.5; }
+  to { transform: scale(1.65); opacity: 0; }
+}
+@keyframes al-breathe {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(1.25); opacity: 0.25; }
+}
+@keyframes al-sway {
+  from { transform: rotate(-1.5deg); }
+  to { transform: rotate(1.5deg); }
+}
+@keyframes al-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-150px); opacity: 0; }
+}
+/* Flowing dashes along a vessel. */
+.al-flow { stroke-dasharray: 6 14; animation: al-flow 2.4s linear infinite; }
+/* Pulse rings behind the bloom button; the second ring starts 1 s later. */
+.al-pulse { animation: al-pulse 2s ease-out infinite; }
+.al-pulse-late { animation-delay: 1s; }
+/* Optic disc glow on the welcome hero. */
+.al-breathe { transform-box: fill-box; transform-origin: center; animation: al-breathe 3s ease-in-out infinite alternate; }
+/* The whole welcome hero sways about the optic disc at (196, 40). */
+.al-sway { transform-origin: 196px 40px; animation: al-sway 7.5s ease-in-out infinite alternate; }
+/* Small bubbles rising above the Start button. */
+.al-bubble { opacity: 0; animation: al-rise 4s ease-out infinite; }
+/* Underline of the selected word in an underline switch grows in from the left. */
+.al-underline { transform-origin: left center; transition: transform 0.25s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .al-flow, .al-pulse, .al-breathe, .al-sway, .al-bubble { animation: none !important; }
+  .al-flow { stroke-dasharray: none; opacity: 0; }
+  .al-pulse, .al-bubble { display: none; }
+  .al-underline { transition: none; }
+}
+
 /* Staff summary printing (components/Staff.tsx): app chrome and buttons hidden, black text on white, no tinted panels. */
 @media print {
   @page { margin: 12mm; }
   html, body, #root { height: auto; background: #fff !important; }
+  body::before { display: none !important; }
+  main > svg { display: none !important; }
   body { color: #000 !important; }
   main { max-width: none !important; padding: 0 !important; }
   .no-print, button { display: none !important; }
   .print-area, .print-area * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
   .print-area .card { border: 1px solid #000; border-radius: 0; padding: 10px 12px; break-inside: avoid; }
+  /* The redesigned staff summary has hairline sections (.print-block) instead of boxes: a black rule, kept on one page. */
+  .print-area .print-block { border-top: 1px solid #000 !important; padding-top: 8px; break-inside: avoid; }
+  .print-area .divide-line > * + * { border-color: #999 !important; }
   .print-area .badge { border: 1px solid #000; }
 }
+
+/* Coral range slider (card-scale step): glossy thumb, coral filled track up to --fill (set inline), pale rest. 44 px tall hit area. */
+.al-range { -webkit-appearance: none; appearance: none; height: 44px; background: transparent; cursor: pointer; }
+.al-range:focus-visible { outline: 3px solid var(--color-ocean); outline-offset: 2px; border-radius: 8px; }
+.al-range::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(to right, #d9481e var(--fill, 50%), #f3cdbe var(--fill, 50%));
+}
+.al-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; border: 0;
+  background: radial-gradient(circle at 35% 30%, #ffb08f, #e8552a 55%, #a82c14);
+  box-shadow: 0 6px 12px -4px rgba(168, 44, 20, 0.8), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+}
+.al-range::-moz-range-track { height: 6px; border-radius: 999px; background: #f3cdbe; }
+.al-range::-moz-range-progress { height: 6px; border-radius: 999px; background: #d9481e; }
+.al-range::-moz-range-thumb {
+  width: 28px; height: 28px; border-radius: 50%; border: 0;
+  background: radial-gradient(circle at 35% 30%, #ffb08f, #e8552a 55%, #a82c14);
+  box-shadow: 0 6px 12px -4px rgba(168, 44, 20, 0.8);
+}
+
+/* Staff screens: a near-white page instead of the coral gradient (App sets data-page on <body>). */
+body[data-page="staff"]::before { background: #fffdfb; }

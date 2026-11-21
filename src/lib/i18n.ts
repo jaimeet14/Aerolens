@@ -115,6 +115,7 @@ export const WELCOME = {
     en: 'This is a screening aid. It is not a prescription and does not replace an eye examination.',
     hi: 'यह सिर्फ़ एक शुरुआती जाँच है। यह चश्मे का नंबर (पर्चा) नहीं है और आँखों की पूरी जाँच की जगह नहीं लेती।',
   },
+  ready: { en: 'Ready?', hi: 'तैयार हैं?' },
   start: { en: 'Start', hi: 'शुरू करें' },
   demo: { en: 'Demo mode: camera disabled, distance fixed at 50 cm.', hi: 'डेमो मोड: कैमरा बंद है, दूरी 50 cm पर तय है।' },
   recent: { en: 'Recent sessions (staff)', hi: 'पिछली जाँचें (स्टाफ़ के लिए)' },
@@ -220,6 +221,7 @@ export const CAMERA = {
     en: 'This screen is too coarse to show the test letters at {cm} cm. For a full test, use a phone.',
     hi: 'यह स्क्रीन {cm} cm पर जाँच के अक्षर ठीक से नहीं दिखा सकती। पूरी जाँच के लिए फ़ोन इस्तेमाल करें।',
   },
+  target: { en: 'target {cm} cm', hi: 'सही दूरी {cm} cm' },
   start: { en: 'Start the eye tests', hi: 'आँखों की जाँच शुरू करें' },
 } satisfies Record<string, Text>;
 
@@ -270,6 +272,7 @@ export const PROGRESS = {
   left: { en: 'Left eye', hi: 'बाईं आँख' },
   fit: { en: 'Frame fit', hi: 'फ़्रेम का नाप' },
   results: { en: 'Results', hi: 'नतीजे' },
+  step: { en: 'Step {n} of {total}', hi: 'कदम {n} ({total} में से)' },
   aria: { en: 'Progress: {label}, {done} of {total} sections done', hi: 'प्रगति: {label}, {total} में से {done} हिस्से पूरे' },
 } satisfies Record<string, Text>;
 
@@ -448,6 +451,7 @@ export const FIT_SUMMARY = {
 } satisfies Record<string, Text>;
 
 export const RESULTS = {
+  yourResult: { en: 'Your result', hi: 'आपका नतीजा' },
   alsoNoted: { en: 'Also noted', hi: 'यह भी देखा गया' },
   lensTitle: { en: 'Lens suggestions', hi: 'लेंस के सुझाव' },
   lensDisclaimer: {

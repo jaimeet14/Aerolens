@@ -4,10 +4,11 @@ For a native Hindi speaker to check. Each table lists one screen: the key (where
 source, and the Hindi shown when the customer picks हिन्दी on the welcome screen. Aim: simple everyday Hindi that a small-town
 customer at an optical counter understands, in the same style as the interview text (section 4), which was already approved.
 
-418 strings in 19 sections. Generated from the string tables on 15 Nov 2026 (triage headlines, the two difference
+422 strings in 20 sections. Generated from the string tables on 15 Nov 2026 (triage headlines, the two difference
 reasons and REC_TEXT.eyeTestFirst changed later the same day; the three interview sound buttons UI.playAgain, UI.soundOff and
 UI.soundOn added later the same day, not yet checked; the 26 far-point strings in section 18 added 16 Nov 2026, not yet
-checked; the 5 strings in section 19 added 18 Nov 2026, not yet checked); if you change a Hindi string,
+checked; the 5 strings in section 19 added 18 Nov 2026, not yet checked; the 4 strings in section 20 added 21 Nov 2026 with the
+redesign, not yet checked); if you change a Hindi string,
 change it in the file named under the section title (the key says which entry) and update this file.
 
 ## How to read the tables
@@ -615,3 +616,20 @@ TRIAGE_TEXT.wearGlasses and TRIAGE_TEXT.wearContacts `{cm}` is 50; "long sight" 
 | TRIAGE_TEXT.farPointShort | {eye} eye: far point checked only out to {cm} cm, so short sight up to about {d} D is not ruled out. | {eye}: धुंधला होने की दूरी सिर्फ़ {cm} cm तक जाँची गई, इसलिए लगभग {d} D तक का मायोपिया (दूर का कम दिखना) न होने की बात पक्की नहीं है। |
 | TRIAGE_TEXT.wearGlasses | You usually wear glasses but read well without them at {cm} cm. This is common with glasses for long sight, reading or mild astigmatism, which this screening cannot measure: take your glasses to an eye test. | आप आमतौर पर चश्मा पहनते हैं, फिर भी {cm} cm पर बिना चश्मे के ठीक से पढ़ पाए। पास का कम दिखने (हाइपरोपिया), पढ़ने या हल्के एस्टिग्मैटिज़्म (सिलेंडर नंबर) के चश्मे में ऐसा अक्सर होता है, और यह जाँच इन्हें नाप नहीं सकती: अपना चश्मा लेकर आँखों की जाँच करवाएँ। |
 | TRIAGE_TEXT.wearContacts | You usually wear contact lenses but read well without them at {cm} cm. This is common with lenses for long sight, reading or mild astigmatism, which this screening cannot measure: take your contact lens details to an eye test. | आप आमतौर पर कॉन्टैक्ट लेंस पहनते हैं, फिर भी {cm} cm पर बिना लेंस के ठीक से पढ़ पाए। पास का कम दिखने (हाइपरोपिया), पढ़ने या हल्के एस्टिग्मैटिज़्म (सिलेंडर नंबर) के लेंस में ऐसा अक्सर होता है, और यह जाँच इन्हें नाप नहीं सकती: अपने कॉन्टैक्ट लेंस की जानकारी लेकर आँखों की जाँच करवाएँ। |
+
+## 20. Redesign: welcome footer, header step label, distance target, results eyebrow
+
+Code: src/lib/i18n.ts WELCOME.ready, PROGRESS.step, CAMERA.target, RESULTS.yourResult
+
+New 21 Nov 2026 (visual redesign), not yet checked. WELCOME.ready is shown above the disclaimer, next to the Start button.
+PROGRESS.step is shown under the progress line as "कदम 2 (5 में से) · सेटिंग": `{n}` is the current step (1 to 5), `{total}` is 5,
+and the step name (section 7) follows after " · ". कदम is the word already used in FAR.skip (यह कदम छोड़ें).
+CAMERA.target is shown under the live distance on the distance-check screen (`{cm}` = 50), worded like GUARD.badge (सही दूरी).
+RESULTS.yourResult is the small label above the main finding on the results screen.
+
+| Key | English | Hindi |
+|---|---|---|
+| WELCOME.ready | Ready? | तैयार हैं? |
+| PROGRESS.step | Step {n} of {total} | कदम {n} ({total} में से) |
+| CAMERA.target | target {cm} cm | सही दूरी {cm} cm |
+| RESULTS.yourResult | Your result | आपका नतीजा |

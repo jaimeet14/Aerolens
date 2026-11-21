@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CAMERA_DENIED, DEMO, type Iris } from '../hooks/useIrisDistance';
 import { useOfflineReady } from '../hooks/useOfflineReady';
 import { screenLimit } from '../lib/acuity';
@@ -10,6 +10,10 @@ import { RED_FLAGS, redFlagText } from '../lib/triage';
 import type { Correction, TestedWith } from '../lib/types';
 import { formatBuildTime } from '../lib/version';
 import type { OfflineStatus } from '../lib/offline';
+import {
+  BigNumber, Bloom, CameraFrame, Footer, Heading, Note, RisingBubbles, Steps, TextLink, TickRow, TickRows, UnderlineSwitch, VesselHero,
+  type SwitchOption,
+} from './Coral';
 import { Fill, Rich } from './Text';
 
 /** Build time in the phone's local time; the typeof guard keeps it safe where `define` did not run. */
@@ -32,72 +36,64 @@ export function Welcome({ lang, onLang, onStart, onRecent }: {
   const T = WELCOME;
   const offline = useOfflineReady();
   return (
-    <div className="card">
-      <fieldset>
+    <div className="relative">
+      {/* Vessels from the optic disc arcing over the top right; the title sits below the main vessel's tail (150 px), so no
+          vessel crosses the title or the tagline at 360-375 px. Decorative, behind everything. */}
+      <VesselHero />
+      <p className="pt-1 text-[11px] font-bold uppercase tracking-[1.2px] text-[#B8391A]">Team Aero</p>
+      {/* The brand name, not translated. */}
+      <h1 aria-label="AeroLens" className="mt-[150px] text-[44px] font-extrabold leading-[.95] tracking-[-1.5px] text-ink">
+        <span aria-hidden className="block">Aero</span>
+        <span aria-hidden className="block pl-[30px] font-bold italic text-brand">Lens</span>
+      </h1>
+      <p className="mt-4 max-w-[15rem] font-medium text-ocean">{T.tagline[lang]}</p>
+      <fieldset className="mt-5">
         {/* Every language, since the person may not read the current one yet. */}
-        <legend className="text-sm font-medium text-muted">
+        <legend className="text-[11px] font-medium text-muted">
           {LANGS.map((l, i) => <span key={l} lang={l}>{i > 0 && ' · '}{T.chooseLang[l]}</span>)}
         </legend>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {LANGS.map((l) => (
-            <button key={l} type="button" lang={l} aria-pressed={lang === l}
-              className={`btn min-h-12 rounded-2xl px-2 py-2.5 text-lg ${lang === l ? 'btn-primary' : 'btn-ghost'}`} onClick={() => onLang(l)}>
-              {LANG_NAME[l]}
-            </button>
-          ))}
-        </div>
+        <UnderlineSwitch className="mt-0.5" separator value={lang} onPick={onLang}
+          options={LANGS.map((l) => ({ id: l, label: LANG_NAME[l], lang: l }))} />
       </fieldset>
-      <div className="mt-6 grid h-11 w-11 place-items-center rounded-full bg-brand-soft text-brand" aria-hidden>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
-      </div>
-      <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-tight">{T.title[lang]}</h1>
-      <p className="mt-2 text-brand">{T.tagline[lang]}</p>
-      <p className="mt-4 text-muted">{T.intro[lang]}</p>
-      <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-muted">
-        <li>{T.minutes[lang]}</li>
-        <li>{T.card[lang]}</li>
-        <li>{T.brightness[lang]}</li>
+      <ul className="mt-4 space-y-2 text-sm text-ink">
+        {[T.minutes, T.card, T.brightness].map((t) => (
+          <li key={t.en} className="flex gap-2.5">
+            <span aria-hidden className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
+            <span>{t[lang]}</span>
+          </li>
+        ))}
       </ul>
-      <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">{T.disclaimer[lang]}</p>
-      <button className="btn btn-primary mt-5 w-full" onClick={onStart}>{T.start[lang]}</button>
-      {DEMO && <p className="mt-3 text-center text-xs text-subtle">{T.demo[lang]}</p>}
+      <div className="mt-8 flex items-end justify-between gap-4">
+        <div className="min-w-0 pb-1">
+          <p className="text-[15px] font-extrabold tracking-[-0.4px]">{T.ready[lang]}</p>
+          <p className="mt-1 text-[11px] leading-snug text-muted">{T.disclaimer[lang]}</p>
+        </div>
+        <span className="relative mr-1 shrink-0">
+          <RisingBubbles />
+          <Bloom size={84} onClick={onStart}>{T.start[lang]}</Bloom>
+        </span>
+      </div>
+      {DEMO && <p className="mt-4 text-center text-xs text-muted">{T.demo[lang]}</p>}
+      <button className="al-focus mx-auto mt-4 block min-h-11 rounded-md px-2 text-center text-sm font-semibold text-ocean underline-offset-4 hover:underline" onClick={onRecent}>
+        {T.recent[lang]}
+      </button>
       {/* Offline / update status of the service worker; the live region stays mounted so each change is announced.
           Welcome screen only, so "Reload now" never interrupts a test. */}
-      <div className={`text-center text-xs text-subtle ${offline === 'hidden' ? 'hidden' : 'mt-2'}`}>
+      <div className={`text-center text-xs text-muted ${offline === 'hidden' ? 'hidden' : 'mt-2'}`}>
         <p aria-live="polite">{offline === 'hidden' ? '' : OFFLINE_TEXT[offline][lang]}</p>
         {offline === 'update-ready' && (
-          <button type="button" className="mt-1 min-h-9 rounded-full px-3 text-xs font-medium text-brand ring-1 ring-brand/40"
+          <button type="button" className="al-focus mt-1 min-h-11 rounded-full px-4 text-xs font-semibold text-ocean ring-1 ring-ocean/50"
             onClick={() => location.reload()}>
             {T.reloadNow[lang]}
           </button>
         )}
       </div>
-      <button className="mt-4 block w-full text-center text-sm font-medium text-brand underline-offset-4 hover:underline" onClick={onRecent}>
-        {T.recent[lang]}
-      </button>
-      {BUILD_LABEL && <p className="mt-3 text-center text-[11px] text-subtle">{fmt(T.version[lang], { time: BUILD_LABEL })}</p>}
+      {BUILD_LABEL && <p className="mt-2 text-center text-[11px] text-muted">{fmt(T.version[lang], { time: BUILD_LABEL })}</p>}
     </div>
   );
 }
 
-/** A row of pill buttons for one required choice; the selected one is filled. */
-function Choice<T extends string>({ options, value, onPick, cols }: {
-  options: { id: T; label: string }[]; value: T | null; onPick: (id: T) => void; cols: 'grid-cols-2' | 'grid-cols-3';
-}) {
-  return (
-    <div className={`mt-3 grid ${cols} gap-2`}>
-      {options.map((o) => (
-        <button key={o.id} type="button" aria-pressed={value === o.id}
-          className={`btn rounded-2xl px-2 py-3 text-sm ${value === o.id ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => onPick(o.id)}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-const ChooseOne = ({ lang }: { lang: Lang }) => <p className="mt-2 text-sm text-red-700" role="alert">{SAFETY.chooseOne[lang]}</p>;
+const ChooseOne = ({ lang }: { lang: Lang }) => <Note tone="error" role="alert" className="mt-2">{SAFETY.chooseOne[lang]}</Note>;
 
 /**
  * Red flags, then usual wear. The test itself is always done without glasses (contact lenses may stay in).
@@ -115,46 +111,43 @@ export function Safety({ lang, onContinue }: { lang: Lang; onContinue: (flags: s
   // A new usual-wear answer asks the contact lens follow-up again, so it is always a deliberate choice.
   const pickUsual = (c: Correction) => { if (c !== usual) setLenses(null); setUsual(c); setMissing(false); };
   const pickLenses = (l: ContactLenses) => { setLenses(l); setMissing(false); };
-  const usualWear: { id: Correction; label: string }[] = [
+  const usualWear: SwitchOption<Correction>[] = [
     { id: 'none', label: T.wearNone[lang] },
     { id: 'glasses', label: T.wearGlasses[lang] },
     { id: 'contacts', label: T.wearContacts[lang] },
   ];
-  const lensChoice: { id: ContactLenses; label: string }[] = [
+  const lensChoice: SwitchOption<ContactLenses>[] = [
     { id: 'out', label: T.lensesOut[lang] },
     { id: 'in', label: T.lensesIn[lang] },
   ];
   return (
-    <div className="card">
-      <h2 className="text-xl font-semibold">{T.title[lang]}</h2>
+    <div>
+      <Heading>{T.title[lang]}</Heading>
       <p className="mt-1 text-muted">{T.ask[lang]}</p>
-      <div className="mt-4 space-y-2">
+      <TickRows className="mt-3">
         {RED_FLAGS.map((f) => (
-          <label key={f} className="flex items-center gap-3 rounded-2xl bg-sunk p-4">
-            <input type="checkbox" className="h-5 w-5 shrink-0 accent-brand" checked={checked.includes(f)} onChange={() => toggle(f)} />
-            <span>{redFlagText(f, lang)}</span>
-          </label>
+          <TickRow key={f} selected={checked.includes(f)} onClick={() => toggle(f)}>{redFlagText(f, lang)}</TickRow>
         ))}
-      </div>
+      </TickRows>
       <fieldset className="mt-6">
-        <legend className="font-medium">{T.usualQ[lang]}</legend>
-        <Choice options={usualWear} value={usual} onPick={pickUsual} cols="grid-cols-3" />
+        <legend className="font-semibold">{T.usualQ[lang]}</legend>
+        <UnderlineSwitch className="mt-1" options={usualWear} value={usual} onPick={pickUsual} />
         {missing && usual === null && <ChooseOne lang={lang} />}
       </fieldset>
       {usual === 'glasses' && (
-        <p className="mt-4 rounded-2xl bg-brand-soft p-4 text-sm font-medium text-ink" role="status">{T.glassesOff[lang]}</p>
+        <Note role="status" className="mt-4 font-medium">{T.glassesOff[lang]}</Note>
       )}
       {usual === 'contacts' && (
         <fieldset className="mt-5">
-          <legend className="font-medium">{T.contactsQ[lang]}</legend>
+          <legend className="font-semibold">{T.contactsQ[lang]}</legend>
           <p className="mt-1 text-sm text-muted">{T.contactsNote[lang]}</p>
-          <Choice options={lensChoice} value={lenses} onPick={pickLenses} cols="grid-cols-2" />
+          <UnderlineSwitch className="mt-1" options={lensChoice} value={lenses} onPick={pickLenses} />
           {missing && lenses === null && <ChooseOne lang={lang} />}
         </fieldset>
       )}
-      <button className="btn btn-primary mt-5 w-full" onClick={submit}>
-        {checked.length ? T.continue[lang] : T.noneApply[lang]}
-      </button>
+      <Footer>
+        <Bloom size={checked.length ? 72 : 80} onClick={submit}>{checked.length ? T.continue[lang] : T.noneApply[lang]}</Bloom>
+      </Footer>
     </div>
   );
 }
@@ -162,12 +155,27 @@ export function Safety({ lang, onContinue }: { lang: Lang; onContinue: (flags: s
 export function Referral({ lang, flags, onRestart }: { lang: Lang; flags: string[]; onRestart: () => void }) {
   const T = REFERRAL;
   return (
-    <div className="card ring-2 ring-red-400">
-      <h2 className="text-2xl font-semibold">{T.title[lang]}</h2>
-      <p className="mt-2 text-muted">{T.told[lang]}</p>
-      <ul className="mt-1 list-disc pl-5">{flags.map((f) => <li key={f}>{redFlagText(f, lang)}</li>)}</ul>
-      <p className="mt-4 text-muted">{T.body[lang]}</p>
-      <button className="btn btn-ghost mt-5" onClick={onRestart}>{T.restart[lang]}</button>
+    <div>
+      <span aria-hidden className="grid h-[46px] w-[46px] place-items-center rounded-full"
+        style={{ background: 'radial-gradient(circle at 35% 30%, #FF8A6A, #C8321A 60%, #8A1C0A)', boxShadow: '0 8px 16px -6px rgba(138,28,10,.7)' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 7v6" /><path d="M12 17.2v.1" />
+        </svg>
+      </span>
+      <Heading className="mt-4">{T.title[lang]}</Heading>
+      <p className="mt-3 text-sm font-semibold text-muted">{T.told[lang]}</p>
+      <ul className="mt-1 divide-y divide-line">
+        {flags.map((f) => (
+          <li key={f} className="flex gap-2.5 py-2">
+            <span aria-hidden className="mt-[0.45rem] h-2 w-2 shrink-0 rounded-full bg-alert" />
+            <span>{redFlagText(f, lang)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-ink">{T.body[lang]}</p>
+      <Footer>
+        <Bloom size={72} onClick={onRestart}>{T.restart[lang]}</Bloom>
+      </Footer>
     </div>
   );
 }
@@ -180,51 +188,62 @@ export function ScaleStep({ lang, initialPx, onDone }: { lang: Lang; initialPx: 
   const box = useRef<HTMLDivElement>(null);
   // Use the box's rendered width, so what the user matched is exactly what we record.
   const done = () => onDone((box.current?.getBoundingClientRect().width || w) / CARD_SHORT_MM);
+  const min = 100;
+  const fill = `${(((w - min) / Math.max(1, max - min)) * 100).toFixed(1)}%`;
   return (
-    <div className="card">
-      <h2 className="text-xl font-semibold">{T.title[lang]}</h2>
-      <ol className="mt-2 list-decimal space-y-0.5 pl-5 text-sm text-muted">
-        <li>{T.step1[lang]}</li>
-        <li><Rich text={T.step2[lang]} boldClass="text-ink" /></li>
-        <li>{T.step3[lang]}</li>
-        <li><Rich text={T.step4[lang]} boldClass="text-ink" /></li>
-      </ol>
-      {/* Full-bleed row so the box can be wider than the card padding allows; the ring is inset so the outer edge is exactly w. Only the width is calibrated, so height is capped to keep the slider on screen. */}
-      <div className="relative left-1/2 mt-5 flex w-screen -translate-x-1/2 justify-center">
-        <div ref={box} className="shrink-0 rounded-xl bg-brand-soft ring-2 ring-inset ring-brand" style={{ width: w, height: Math.min((w * 85.6) / CARD_SHORT_MM, 200) }} />
+    <div>
+      <Heading>{T.title[lang]}</Heading>
+      <Steps className="mt-3" items={[
+        T.step1[lang],
+        <Rich text={T.step2[lang]} boldClass="text-ink" />,
+        T.step3[lang],
+        <Rich text={T.step4[lang]} boldClass="text-ink" />,
+      ]} />
+      {/* Full-bleed white row so the box can be wider than the page padding allows. The dashed border is inside the box
+          (border-box), so its outer edge is exactly w. Only the width is calibrated, so height is capped to keep the slider on screen. */}
+      <div className="relative left-1/2 mt-5 flex w-screen -translate-x-1/2 justify-center bg-white py-4">
+        <div ref={box} className="shrink-0 rounded-xl border-2 border-dashed border-brand bg-polyp/50" style={{ width: w, height: Math.min((w * 85.6) / CARD_SHORT_MM, 200) }} />
       </div>
-      <input type="range" className="mt-5 w-full accent-brand" min={100} max={max} step={0.5} value={w} onChange={(e) => setW(Number(e.target.value))} aria-label={T.slider[lang]} />
-      <button className="btn btn-primary mt-4 w-full" onClick={done}>{T.done[lang]}</button>
-      {/* Below the button and collapsed by default, so the slider and button stay on screen at 360 px. */}
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer font-medium text-brand">{T.why[lang]}</summary>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-muted">
-          <li>{T.why1[lang]}</li>
-          <li>{T.why2[lang]}</li>
-          <li>{fmt(T.why3[lang], { mm: CARD_SHORT_MM })}</li>
-          <li>{T.why4[lang]}</li>
-          <li>{T.why5[lang]}</li>
-        </ul>
-      </details>
+      <input type="range" className="al-range mt-3 w-full" min={min} max={max} step={0.5} value={w}
+        style={{ '--fill': fill } as CSSProperties} onChange={(e) => setW(Number(e.target.value))} aria-label={T.slider[lang]} />
+      <Footer className="mt-3" left={
+        // Collapsed by default, so the slider and button stay on screen at 360 px.
+        <details className="text-sm">
+          <summary className="al-focus flex min-h-11 cursor-pointer items-center rounded-md font-semibold text-ocean">{T.why[lang]}</summary>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
+            <li>{T.why1[lang]}</li>
+            <li>{T.why2[lang]}</li>
+            <li>{fmt(T.why3[lang], { mm: CARD_SHORT_MM })}</li>
+            <li>{T.why4[lang]}</li>
+            <li>{T.why5[lang]}</li>
+          </ul>
+        </details>
+      }>
+        <Bloom size={84} fontSize={12} onClick={done}>{T.done[lang]}</Bloom>
+      </Footer>
     </div>
   );
 }
 
-/** Mirrored live camera preview (also used by the frame-fit step). */
+/** Mirrored live camera preview (also used by the frame-fit step). Fills its frame (CameraFrame). */
 export function Preview({ stream }: { stream: MediaStream | null }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     if (ref.current) ref.current.srcObject = stream;
   }, [stream]);
-  return <video ref={ref} autoPlay muted playsInline className="h-40 w-full -scale-x-100 rounded-xl bg-black object-cover" />;
+  return <video ref={ref} autoPlay muted playsInline className="h-full w-full -scale-x-100 bg-black object-cover" />;
 }
+
+/** The camera frame's content in demo mode (no camera). */
+export const DemoCamera = ({ text }: { text: string }) => (
+  <div className="grid h-full w-full place-items-center bg-sunk px-4 text-center text-sm text-muted">{text}</div>
+);
 
 // English keeps the browser's own date format, as before; Hindi uses Hindi month names.
 const dateOf = (iso: string, lang: Lang) =>
   new Date(iso).toLocaleDateString(DATE_LOCALE[lang], { day: 'numeric', month: 'short', year: 'numeric' });
 
 type CalMsg = { tone: 'ok' | 'warn' | 'error'; text: keyof typeof CALIBRATION };
-const MSG_TONE = { ok: 'text-emerald-700', warn: 'text-amber-900', error: 'text-red-700' } as const;
 
 /**
  * The one-time tape-measure calibration of the camera (saved per phone). Until it is done it is a
@@ -239,16 +258,16 @@ function CameraCalibration({ lang, iris, targetCm }: { lang: Lang; iris: Iris; t
   const ready = iris.status === 'ready' && iris.faceFound;
   const msgText = (m: CalMsg) => fmt(T[m.text][lang], { min: CALIBRATE_MIN_CM, max: CALIBRATE_MAX_CM });
 
-  if (DEMO) return <p className="mt-4 text-sm text-subtle">{T.demo[lang]}</p>;
+  if (DEMO) return <p className="mt-4 text-sm text-muted">{T.demo[lang]}</p>;
 
   if (iris.calibrated && !editing) {
     return (
       <div className="mt-4 text-sm">
         <div className="flex items-center justify-between gap-3">
-          <p className="font-medium text-emerald-700">{T.calibrated[lang]}</p>
-          <button className="btn btn-ghost shrink-0 px-3 py-1.5 text-xs" onClick={() => { setEditing(true); setMsg(null); }}>{T.recalibrate[lang]}</button>
+          <p className="font-semibold text-[#1E6B3E]">✓ {T.calibrated[lang]}</p>
+          <TextLink className="shrink-0" onClick={() => { setEditing(true); setMsg(null); }}>{T.recalibrate[lang]}</TextLink>
         </div>
-        {msg && <p role="status" className={`mt-1 ${MSG_TONE[msg.tone]}`}>{msgText(msg)}</p>}
+        {msg && <Note role="status" tone={msg.tone} className="mt-1">{msgText(msg)}</Note>}
       </div>
     );
   }
@@ -265,24 +284,25 @@ function CameraCalibration({ lang, iris, targetCm }: { lang: Lang; iris: Iris; t
   };
 
   return (
-    <section className="mt-4 rounded-2xl bg-sunk p-4 text-sm ring-1 ring-brand" aria-labelledby="cal-title">
-      <h3 id="cal-title" className="font-semibold">{editing ? T.titleEdit[lang] : T.titleFirst[lang]}</h3>
+    <section className="mt-6 border-t border-line pt-4 text-sm" aria-labelledby="cal-title">
+      <h3 id="cal-title" className="text-base font-extrabold tracking-[-0.3px]">{editing ? T.titleEdit[lang] : T.titleFirst[lang]}</h3>
       <p className="mt-1 text-muted">{T.why[lang]}</p>
-      <ol className="mt-2 list-decimal space-y-1 pl-5">
-        <li>{fmt(T.step1[lang], { cm: targetCm })}</li>
-        <li>{T.step2[lang]}</li>
-        <li><Rich text={T.step3[lang]} /></li>
-      </ol>
-      <form className="mt-3 flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); if (ready) calibrate(); }}>
-        <input className="w-20 rounded-full bg-white px-4 py-2 text-ink ring-1 ring-line" inputMode="decimal" value={cm}
-          onChange={(e) => { setCm(e.target.value); setMsg(null); }} aria-label={T.input[lang]} />
-        <span>cm</span>
-        <button type="submit" className="btn btn-primary ml-auto py-2" disabled={!ready}>{T.button[lang]}</button>
+      <Steps className="mt-3" items={[fmt(T.step1[lang], { cm: targetCm }), T.step2[lang], <Rich text={T.step3[lang]} />]} />
+      <form className="mt-2" onSubmit={(e) => { e.preventDefault(); if (ready) calibrate(); }}>
+        <Footer className="mt-2" left={
+          <label className="flex items-baseline gap-1.5">
+            <input className="al-focus w-24 border-b-[3px] border-brand bg-transparent pb-0.5 text-[36px] font-extrabold leading-none tracking-[-1px] text-ink tabular-nums"
+              inputMode="decimal" value={cm} onChange={(e) => { setCm(e.target.value); setMsg(null); }} aria-label={T.input[lang]} />
+            <span className="text-[14px] font-semibold">cm</span>
+          </label>
+        }>
+          <Bloom type="submit" size={72} disabled={!ready}>{T.button[lang]}</Bloom>
+        </Footer>
       </form>
       {!ready && iris.status !== 'error' && <p className="mt-2 text-muted">{T.needFace[lang]}</p>}
-      {msg && <p role="status" className={`mt-2 ${MSG_TONE[msg.tone]}`}>{msgText(msg)}</p>}
+      {msg && <Note role="status" tone={msg.tone} className="mt-2">{msgText(msg)}</Note>}
       {editing && (
-        <button className="mt-3 font-medium text-brand underline underline-offset-2" onClick={() => { setEditing(false); setMsg(null); }}>{T.keep[lang]}</button>
+        <TextLink className="mt-2" onClick={() => { setEditing(false); setMsg(null); }}>{T.keep[lang]}</TextLink>
       )}
     </section>
   );
@@ -308,37 +328,46 @@ export function CameraStep({ lang, iris, targetMm, pxPerMm, savedScaleAt, onReca
   const targetCm = Math.round(targetMm / 10);
   const blocker = startBlocker({ demo: DEMO, status: iris.status, faceFound: iris.faceFound, calibrated: iris.calibrated }, lang);
   return (
-    <div className="card">
-      <h2 className="text-xl font-semibold">{T.title[lang]}</h2>
+    <div>
+      <Heading>{T.title[lang]}</Heading>
       <p className="mt-1 text-sm text-muted">{fmt(T.intro[lang], { cm: targetCm })}</p>
-      <div className="mt-4">{DEMO ? <div className="grid h-40 place-items-center rounded-xl bg-sunk text-subtle">{T.demoCamera[lang]}</div> : <Preview stream={iris.stream} />}</div>
-      {iris.status === 'loading' && <p className="mt-3 text-center text-muted">{T.starting[lang]}</p>}
-      {iris.status === 'error' && <p className="mt-3 rounded-2xl bg-red-50 p-4 text-red-800 ring-1 ring-red-200">{cameraError(iris.error, lang)}</p>}
+      <div className="mt-6">
+        <CameraFrame>{DEMO ? <DemoCamera text={T.demoCamera[lang]} /> : <Preview stream={iris.stream} />}</CameraFrame>
+      </div>
+      {iris.status === 'loading' && <p className="mt-4 text-center text-muted">{T.starting[lang]}</p>}
+      {iris.status === 'error' && <Note tone="error" role="alert" className="mt-4">{cameraError(iris.error, lang)}</Note>}
       {iris.status === 'ready' && (
-        <p className="mt-3 text-center text-3xl font-semibold tabular-nums">
-          {iris.faceFound && iris.distanceMm ? `${(iris.distanceMm / 10).toFixed(0)} cm` : T.looking[lang]}
-        </p>
+        <div className="mt-5 text-center">
+          {iris.faceFound && iris.distanceMm
+            ? <BigNumber value={(iris.distanceMm / 10).toFixed(0)} unit="cm" />
+            : <p className="text-lg font-bold">{T.looking[lang]}</p>}
+          <p className="mt-1 text-xs font-semibold text-muted">{fmt(T.target[lang], { cm: targetCm })}</p>
+        </div>
       )}
       {savedScaleAt && (
-        <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-2 text-sm">
           <p className="text-muted">
             <Fill template={T.screenSaved[lang]} nodes={{ date: <span className="whitespace-nowrap">{dateOf(savedScaleAt, lang)}</span> }} />
           </p>
-          <button className="btn btn-ghost shrink-0 px-3 py-1.5 text-xs" onClick={onRecalibrateScreen}>{T.recalScreen[lang]}</button>
+          <TextLink className="shrink-0" onClick={onRecalibrateScreen}>{T.recalScreen[lang]}</TextLink>
         </div>
       )}
       <CameraCalibration lang={lang} iris={iris} targetCm={targetCm} />
       {!limit.reaches66 && (
-        <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200" role="note">
+        <Note tone="warn" role="note" className="mt-4">
           {limit.snellen
             ? fmt(T.limit[lang], { snellen: limit.snellen, cm: targetCm })
             : fmt(T.tooCoarse[lang], { cm: targetCm })}
-        </p>
+        </Note>
       )}
-      {/* A visible reason instead of a silently disabled button. */}
-      {blocker && <p id="start-blocker" className="mt-5 text-center text-sm text-muted">{blocker}</p>}
-      <button className={`btn btn-primary w-full ${blocker ? 'mt-2' : 'mt-5'}`} disabled={blocker !== null}
-        aria-describedby={blocker ? 'start-blocker' : undefined} onClick={onContinue}>{T.start[lang]}</button>
+      <Footer left={
+        // A visible reason instead of a silently disabled button.
+        blocker && <p id="start-blocker" className="text-sm text-muted">{blocker}</p>
+      }>
+        <Bloom size={80} fontSize={12} disabled={blocker !== null} describedBy={blocker ? 'start-blocker' : undefined} onClick={onContinue}>
+          {T.start[lang]}
+        </Bloom>
+      </Footer>
     </div>
   );
 }

@@ -12,6 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/mukta": "^5.3.0",
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
     "@mediapipe/face_mesh": "^0.4.1633559619",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

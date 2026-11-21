@@ -12,10 +12,13 @@ import { landoltDiameterMm } from '../lib/landolt';
 import { optotypeHeightMm } from '../lib/optics';
 import { nextLetter, SLOAN_LETTERS, type Letter } from '../lib/sloan';
 import type { AcuityAnswer, Chart, DialAnswer, Dir, Duochrome, Eye, EyeResult } from '../lib/types';
+import {
+  ActionWords, AnswerBubble, BigNumber, Bloom, BubbleIcon, Eyebrow, Footer, Heading, Note, Steps, StimulusPanel, TextLink,
+} from './Coral';
 import { DistanceGuard } from './DistanceGuard';
 import { LandoltC } from './LandoltC';
 import { SloanLetter } from './SloanLetter';
-import { Rich } from './Text';
+import { Fill, Rich } from './Text';
 import { TumblingE } from './TumblingE';
 
 export interface Geometry { pxPerMm: number; targetMm: number }
@@ -30,25 +33,56 @@ export function CoverPrompt({ lang, eye, chooseChart = false, onReady }: {
 }) {
   const T = COVER;
   const right = eye === 'right';
+  // Testing the right eye = cover the LEFT eye, so the palm is drawn on the left (and the other way round).
+  const charts: { chart: Chart; key: string; label: string }[] = [
+    { chart: 'letters', key: 'K', label: T.letters[lang] },
+    { chart: 'E', key: 'E', label: T.e[lang] },
+    { chart: 'C', key: 'C', label: T.ring[lang] },
+  ];
   return (
-    <div className="card text-center">
-      <p className="text-sm uppercase tracking-widest text-brand">{(right ? T.testingRight : T.testingLeft)[lang]}</p>
-      <h2 className="mt-2 text-2xl font-semibold">{(right ? T.coverLeft : T.coverRight)[lang]}</h2>
+    <div>
+      <Eyebrow>{(right ? T.testingRight : T.testingLeft)[lang]}</Eyebrow>
+      <Heading className="mt-1">{(right ? T.coverLeft : T.coverRight)[lang]}</Heading>
       <p className="mt-2 text-muted">{(right ? T.howRight : T.howLeft)[lang]}</p>
+      <div className="mt-3 flex justify-center"><CoverDrawing palm={right ? 'left' : 'right'} /></div>
       {chooseChart ? (
-        <div className="mt-5 grid gap-2">
-          <button className="btn btn-primary w-full" onClick={() => onReady('letters')}>{T.letters[lang]}</button>
-          <button className="btn btn-ghost w-full" onClick={() => onReady('E')}>{T.e[lang]}</button>
-          <button className="btn btn-ghost w-full" onClick={() => onReady('C')}>{T.ring[lang]}</button>
-          <div className="mt-1 space-y-1 text-sm text-subtle">
+        <>
+          {/* Each row picks the chart and starts the test at once (as before), so they are plain buttons, not toggles. */}
+          <div className="mt-4 flex flex-col divide-y divide-line">
+            {charts.map((c) => (
+              <button key={c.chart} type="button" className="al-focus flex min-h-14 w-full items-center gap-3 rounded-lg py-2.5 text-left font-semibold text-ink"
+                onClick={() => onReady(c.chart)}>
+                <BubbleIcon>{c.key}</BubbleIcon>
+                <span className="min-w-0 flex-1">{c.label}</span>
+                <span aria-hidden className="text-brand">→</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 space-y-1 text-sm text-muted">
             <p>{T.eHelp[lang]}</p>
             <p>{T.ringHelp[lang]}</p>
           </div>
-        </div>
+        </>
       ) : (
-        <button className="btn btn-primary mt-5" onClick={() => onReady()}>{T.ready[lang]}</button>
+        <Footer>
+          <Bloom onClick={() => onReady()}>{T.ready[lang]}</Bloom>
+        </Footer>
       )}
     </div>
+  );
+}
+
+/** Mirror view of a face: a palm over one eye, the other eye open. Decorative (the heading says which eye). */
+function CoverDrawing({ palm }: { palm: 'left' | 'right' }) {
+  const palmX = palm === 'left' ? 26 : 70;
+  const eyeX = palm === 'left' ? 70 : 26;
+  return (
+    <svg aria-hidden focusable="false" viewBox="0 0 96 60" width="120" height="75" className="shrink-0">
+      <path d="M4 30Q28 4 48 30Q68 4 92 30" fill="none" stroke="#2A1610" strokeWidth="2" strokeLinecap="round" />
+      <circle cx={eyeX} cy="26" r="7" fill="#D9481E" />
+      <circle cx={eyeX} cy="26" r="3" fill="#2A1610" />
+      <ellipse cx={palmX} cy="28" rx="20" ry="16" fill="#FFB08F" opacity=".85" />
+    </svg>
   );
 }
 
@@ -68,7 +102,7 @@ export function AcuityTest({ lang, eye, chart, iris, geo, onDone }: {
   const ring = chart === 'C';
 
   if (maxIdx < 0) {
-    return <div className="card">{ACUITY.tooCoarse[lang]}</div>;
+    return <Note tone="warn" role="alert">{ACUITY.tooCoarse[lang]}</Note>;
   }
   // Sloan letters and the Landolt C share the E's 5x5 design (stroke, and the C's gap, = height / 5), so the size and
   // the screen limit are identical. The C's outer diameter comes from landoltDiameterMm, the E height by definition.
@@ -96,36 +130,38 @@ export function AcuityTest({ lang, eye, chart, iris, geo, onDone }: {
 
   return (
     <div>
-      <p className="mb-2 text-center text-sm text-muted">{EYE[eye][lang]} · {question}</p>
+      <TestHeader lang={lang} eye={eye} title={question} />
       <DistanceGuard lang={lang} iris={iris} targetMm={geo.targetMm}>
-        <div className="flex h-56 items-center justify-center rounded-2xl bg-white">
+        <StimulusPanel className="flex h-56 items-center justify-center">
           {letters ? <SloanLetter letter={letter} sizeCss={sizeCss} />
             : ring ? <LandoltC dir={dir} sizeCss={sizeCss} label={fmt(ACUITY.ringLabel[lang], { dir: DIR_TEXT[dir][lang] })} />
               : <TumblingE dir={dir} sizeCss={sizeCss} label={fmt(ACUITY.eLabel[lang], { dir: DIR_TEXT[dir][lang] })} />}
-        </div>
-        <div className="mt-2 flex justify-center gap-1.5" aria-hidden>
+        </StimulusPanel>
+        <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
           {Array.from({ length: PER_LINE }, (_, i) => (
-            <span key={i} className={`h-2 w-2 rounded-full ${i < s.correct + s.wrong ? 'bg-brand' : 'bg-line'}`} />
+            <span key={i} className={`h-2 w-2 rounded-full ${i < s.correct + s.wrong ? 'bg-brand' : 'bg-brand-pale'}`} />
           ))}
         </div>
         {letters ? (
           <div className="mt-4">
             {/* Wide gaps, larger between the two rows, against vertical mis-taps (D sits above R).
-                Keys stay at least 48 px tall; 5 keys + 4 x 12 px gaps fit a 328 px row (360 px screen). */}
-            <div className="grid grid-cols-5 gap-x-3 gap-y-6">
+                46 px bubbles; 5 keys fit a 328 px row (360 px screen). */}
+            <div className="grid grid-cols-5 justify-items-center gap-x-2 gap-y-5">
               {SLOAN_LETTERS.map((l) => (
-                <button key={l} className="btn btn-ghost min-h-12 rounded-2xl px-0 py-3 text-2xl font-semibold" onClick={() => pick(l)}>{l}</button>
+                <AnswerBubble key={l} size={46} onClick={() => pick(l)}><span className="text-2xl">{l}</span></AnswerBubble>
               ))}
             </div>
-            <button className="btn btn-ghost mt-5 w-full" onClick={() => pick(null)}>{ACUITY.cantSeeBlurry[lang]}</button>
+            <div className="mt-3 flex justify-center">
+              <TextLink onClick={() => pick(null)}>{ACUITY.cantSeeBlurry[lang]}</TextLink>
+            </div>
           </div>
         ) : (
-          <div className="mx-auto mt-4 grid w-56 grid-cols-3 gap-2">
+          <div className="mx-auto mt-4 grid w-60 grid-cols-3 place-items-center gap-2">
             <span />
             <Key lang={lang} d="up" ring={ring} pick={pick} />
             <span />
             <Key lang={lang} d="left" ring={ring} pick={pick} />
-            <button className="btn btn-ghost px-0 text-xs" onClick={() => pick(null)}>{ACUITY.cantSee[lang]}</button>
+            <TextLink className="text-center text-xs" onClick={() => pick(null)}>{ACUITY.cantSee[lang]}</TextLink>
             <Key lang={lang} d="right" ring={ring} pick={pick} />
             <span />
             <Key lang={lang} d="down" ring={ring} pick={pick} />
@@ -136,21 +172,31 @@ export function AcuityTest({ lang, eye, chart, iris, geo, onDone }: {
     </div>
   );
 }
+
+/** Eyebrow with the eye's name, then the test as the heading (first letter capitalised for display). Still: no animation. */
+function TestHeader({ lang, eye, title }: { lang: Lang; eye: Eye; title: string }) {
+  return (
+    <div className="mb-3">
+      <Eyebrow>{EYE[eye][lang]}</Eyebrow>
+      <Heading className="mt-0.5 text-[20px] first-letter:uppercase">{title}</Heading>
+    </div>
+  );
+}
+
 /**
  * One direction key, in the same diamond for both charts: an arrow for the E; for the C a small ring with its gap
- * that way (an answer icon, not a stimulus, so it takes the button's text colour). Both are 32 px tall (the
- * text-2xl line height), so the keys are the same size.
+ * that way (an answer icon, not a stimulus; black like the keys' letters).
  */
 function Key({ lang, d, ring, pick }: { lang: Lang; d: Dir; ring: boolean; pick: (d: Dir) => void }) {
   const dir = DIR_TEXT[d][lang];
   return (
-    <button className={`btn btn-ghost text-2xl ${ring ? 'px-0' : ''}`} aria-label={ring ? fmt(ACUITY.gapKey[lang], { dir }) : dir} onClick={() => pick(d)}>
+    <AnswerBubble size={46} ariaLabel={ring ? fmt(ACUITY.gapKey[lang], { dir }) : dir} onClick={() => pick(d)}>
       {ring ? (
-        <span className="flex h-8 items-center justify-center" aria-hidden>
-          <LandoltC dir={d} sizeCss={32} color="currentColor" label={fmt(ACUITY.ringLabel[lang], { dir })} />
+        <span className="flex h-6 items-center justify-center" aria-hidden>
+          <LandoltC dir={d} sizeCss={24} color="#000" label={fmt(ACUITY.ringLabel[lang], { dir })} />
         </span>
-      ) : ARROW[d]}
-    </button>
+      ) : <span className="text-2xl" aria-hidden>{ARROW[d]}</span>}
+    </AnswerBubble>
   );
 }
 
@@ -198,9 +244,9 @@ export function AstigmatismTest({ lang, eye, iris, geo, acuity, onDone }: {
   const go = (p: 'ask' | 'pick') => { setMsg(null); setPhase(p); };
   return (
     <div>
-      <p className="mb-2 text-center text-sm text-muted">{EYE[eye][lang]} · {T.header[lang]}</p>
+      <TestHeader lang={lang} eye={eye} title={T.header[lang]} />
       <DistanceGuard lang={lang} iris={iris} targetMm={geo.targetMm}>
-        <div className="flex justify-center rounded-2xl bg-white p-1">
+        <StimulusPanel className="flex justify-center p-2">
           <div className="relative shrink-0 touch-manipulation" style={{ width: sizePx, height: sizePx }}>
             <svg className="block" width={sizePx} height={sizePx} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={T.svg[lang]}>
               {/* Selected lines: a light band from number to number, under the unchanged black line. */}
@@ -241,31 +287,30 @@ export function AstigmatismTest({ lang, eye, iris, geo, acuity, onDone }: {
               );
             })}
           </div>
-        </div>
+        </StimulusPanel>
         {phase === 'ask' ? (
-          <div className="mt-4">
-            <p className="text-center">{T.ask[lang]}</p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="btn btn-ghost" onClick={() => onDone({ present: false, lines: [], axisDeg: null })}>{T.same[lang]}</button>
-              <button className="btn btn-primary" onClick={() => go('pick')}>{T.darker[lang]}</button>
-            </div>
-            {/* Recorded distinctly; present stays false so triage treats it like "All look the same". */}
-            <button className="btn btn-ghost mt-2 w-full" onClick={() => onDone({ present: false, lines: [], axisDeg: null, unsure: true })}>{T.unsure[lang]}</button>
+          <div className="mt-5">
+            <p className="text-center font-semibold">{T.ask[lang]}</p>
+            {/* "Not sure" is recorded distinctly; present stays false so triage treats it like "All look the same". */}
+            <ActionWords className="mt-2" options={[
+              { id: 'same', label: T.same[lang], onClick: () => onDone({ present: false, lines: [], axisDeg: null }) },
+              { id: 'darker', label: T.darker[lang], onClick: () => go('pick') },
+              { id: 'unsure', label: T.unsure[lang], onClick: () => onDone({ present: false, lines: [], axisDeg: null, unsure: true }) },
+            ]} />
           </div>
         ) : (
           <div className="mt-4">
-            <p className="text-center">{T.pick[lang]}</p>
+            <p className="text-center font-semibold">{T.pick[lang]}</p>
             <p className="mt-2 text-center text-sm text-muted" aria-live="polite">
               {T.selected[lang]} {lines.length === 0 ? T.none[lang] : lines.map((l, i) => (
                 <Fragment key={l}>{i > 0 && ', '}<span className="whitespace-nowrap">{lineLabelIn(l, lang)}</span></Fragment>
               ))}
             </p>
-            {msg && <p className="mt-2 text-center text-sm text-red-700" role="alert">{T[msg][lang]}</p>}
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="btn btn-ghost" onClick={() => go('ask')}>{T.back[lang]}</button>
-              {/* Looks disabled until a line is picked, but stays tappable so it can say why. */}
-              <button className={`btn btn-primary ${lines.length ? '' : 'opacity-40'}`} aria-disabled={lines.length === 0} onClick={done}>{T.done[lang]}</button>
-            </div>
+            {msg && <Note tone="error" role="alert" className="mt-2">{T[msg][lang]}</Note>}
+            {/* Test page: no pulse. Done looks disabled until a line is picked, but stays tappable so it can say why. */}
+            <Footer className="mt-3" left={<TextLink onClick={() => go('ask')}>{T.back[lang]}</TextLink>}>
+              <Bloom pulse={false} dim={lines.length === 0} onClick={done}>{T.done[lang]}</Bloom>
+            </Footer>
           </div>
         )}
       </DistanceGuard>
@@ -289,15 +334,18 @@ export function DuochromeTest({ lang, eye, iris, geo, acuity, onDone }: {
   );
   return (
     <div>
-      <p className="mb-2 text-center text-sm text-muted">{EYE[eye][lang]} · {fmt(DUO.header[lang], { size: SNELLEN[idx] })}</p>
+      <TestHeader lang={lang} eye={eye} title={fmt(DUO.header[lang], { size: SNELLEN[idx] })} />
       <DistanceGuard lang={lang} iris={iris} targetMm={geo.targetMm}>
-        <div className="flex overflow-hidden rounded-2xl">{panel(DUO_RED_CSS)}{panel(DUO_GREEN_CSS)}</div>
-        <p className="mt-4 text-center">{DUO.ask[lang]}</p>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <button className="btn text-sm font-semibold" style={{ background: DUO_RED_CSS, color: DUO_INK_CSS }} onClick={() => onDone('red')}>{DUO.red[lang]}</button>
-          <button className="btn btn-ghost text-sm" onClick={() => onDone('equal')}>{DUO.same[lang]}</button>
-          <button className="btn text-sm font-semibold" style={{ background: DUO_GREEN_CSS, color: DUO_INK_CSS }} onClick={() => onDone('green')}>{DUO.green[lang]}</button>
-        </div>
+        {/* A 14 px pure white border round the halves, so no coral or peach touches the red and green. */}
+        <StimulusPanel className="p-3.5">
+          <div className="flex overflow-hidden rounded-xl">{panel(DUO_RED_CSS)}{panel(DUO_GREEN_CSS)}</div>
+        </StimulusPanel>
+        <p className="mt-5 text-center font-semibold">{DUO.ask[lang]}</p>
+        <ActionWords className="mt-2" options={[
+          { id: 'red', label: DUO.red[lang], swatch: DUO_RED_CSS, onClick: () => onDone('red') },
+          { id: 'equal', label: DUO.same[lang], onClick: () => onDone('equal') },
+          { id: 'green', label: DUO.green[lang], swatch: DUO_GREEN_CSS, onClick: () => onDone('green') },
+        ]} />
       </DistanceGuard>
     </div>
   );
@@ -362,47 +410,50 @@ export function FarPointTest({ lang, eye, chart, iris, pxPerMm, onDone }: {
   };
   return (
     <div>
-      <p className="mb-2 text-center text-sm text-muted">{EYE[eye][lang]} · {T.header[lang]}</p>
-      <div className="mb-3 flex items-center justify-between gap-2 text-sm">
-        <span className={`rounded-full px-3 py-1 font-medium ${cm !== null ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
-          {fmt(T.distance[lang], { distance: cm !== null ? `${cm} cm` : T.noFace[lang] })}
-        </span>
-        <span className="text-subtle">{fmt(T.trial[lang], { n: Math.min(trials.length + 1, FAR_TRIALS), total: FAR_TRIALS })}</span>
+      <TestHeader lang={lang} eye={eye} title={T.title[lang]} />
+      {/* Live distance as a big coral number (the far point is not gated at 50 cm). Still: no animation on this page. */}
+      <div className="flex items-end justify-between gap-2">
+        <p className="text-sm font-semibold text-muted">
+          {cm !== null
+            ? <Fill template={T.distance[lang]} nodes={{ distance: <BigNumber className="ml-1" value={cm} unit="cm" /> }} />
+            : <span className="text-[#7A4A06]">{fmt(T.distance[lang], { distance: T.noFace[lang] })}</span>}
+        </p>
+        <span className="pb-1 text-sm font-semibold text-muted">{fmt(T.trial[lang], { n: Math.min(trials.length + 1, FAR_TRIALS), total: FAR_TRIALS })}</span>
       </div>
-      <div className="card text-sm">
-        <h2 className="text-base font-semibold">{T.title[lang]}</h2>
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted">
-          <li>{T.step1[lang]}</li>
-          <li>{fmt(T.step2[lang], { cm: FAR_NEAREST_CM })}</li>
-          <li>{T.step3[lang]}</li>
-          <li><Rich text={T.step4[lang]} boldClass="text-ink" /></li>
-        </ol>
-        {trials.length > 0 && (
-          <p className="mt-2" aria-live="polite">{fmt(T.recorded[lang], { list: trials.map((c) => `${c} cm`).join(', ') })} {T.again[lang]}</p>
-        )}
-      </div>
-      <div className="mt-3 flex h-24 items-center justify-center rounded-2xl bg-white" role="img" aria-label={T.letters[lang]}>
-        <div className="flex items-center" style={{ gap: sizeCss }} aria-hidden>
-          {chart === 'letters'
-            ? line.letters.map((l, i) => <SloanLetter key={i} letter={l} sizeCss={sizeCss} />)
-            : line.dirs.map((d, i) => (chart === 'C' ? <LandoltC key={i} dir={d} sizeCss={sizeCss} /> : <TumblingE key={i} dir={d} sizeCss={sizeCss} />))}
-        </div>
-      </div>
-      {coarse && <p className="mt-2 text-center text-sm text-amber-900">{T.coarse[lang]}</p>}
-      {needFace && <p role="alert" className="mt-2 text-center text-sm text-red-700">{T.needFace[lang]}</p>}
-      {shortClear !== null && (
-        <div role="status" className="mt-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
-          <p><Rich text={fmt(T.furtherAsk[lang], { cm: shortClear, max: FAR_BEYOND_CM })} /></p>
-          <button className="btn btn-ghost mt-2 w-full text-sm" onClick={() => onDone(clearFarPoint(shortClear))}>{T.cantFurther[lang]}</button>
-        </div>
+      <Steps className="mt-3" items={[
+        T.step1[lang],
+        fmt(T.step2[lang], { cm: FAR_NEAREST_CM }),
+        T.step3[lang],
+        <Rich text={T.step4[lang]} boldClass="text-ink" />,
+      ]} />
+      {trials.length > 0 && (
+        <p className="mt-2 text-sm" aria-live="polite">{fmt(T.recorded[lang], { list: trials.map((c) => `${c} cm`).join(', ') })} {T.again[lang]}</p>
       )}
-      <button className="btn btn-primary mt-3 min-h-14 w-full text-lg" onClick={blurredNow}>{T.blurred[lang]}</button>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <button className="btn btn-ghost px-3 text-sm" onClick={stillClear}>{T.stillClear[lang]}</button>
-        <button className="btn btn-ghost px-3 text-sm" onClick={() => endWith(blurredFarPoint)}>{T.alreadyBlurred[lang]}</button>
+      <div role="img" aria-label={T.letters[lang]}>
+        <StimulusPanel className="mt-4 flex h-24 items-center justify-center">
+          <div className="flex items-center" style={{ gap: sizeCss }} aria-hidden>
+            {chart === 'letters'
+              ? line.letters.map((l, i) => <SloanLetter key={i} letter={l} sizeCss={sizeCss} />)
+              : line.dirs.map((d, i) => (chart === 'C' ? <LandoltC key={i} dir={d} sizeCss={sizeCss} /> : <TumblingE key={i} dir={d} sizeCss={sizeCss} />))}
+          </div>
+        </StimulusPanel>
       </div>
-      <button className="btn btn-ghost mt-2 w-full" onClick={() => onDone(null)}>{T.skip[lang]}</button>
-      <p className="mt-3 text-xs text-subtle">{T.note[lang]}</p>
+      {coarse && <Note tone="warn" className="mt-3">{T.coarse[lang]}</Note>}
+      {needFace && <Note tone="error" role="alert" className="mt-3">{T.needFace[lang]}</Note>}
+      {shortClear !== null && (
+        <Note tone="warn" role="status" className="mt-3">
+          <p><Rich text={fmt(T.furtherAsk[lang], { cm: shortClear, max: FAR_BEYOND_CM })} /></p>
+          <TextLink className="mt-1" onClick={() => onDone(clearFarPoint(shortClear))}>{T.cantFurther[lang]}</TextLink>
+        </Note>
+      )}
+      <Footer className="mt-4" left={<>
+        <TextLink onClick={stillClear}>{T.stillClear[lang]}</TextLink>
+        <TextLink onClick={() => endWith(blurredFarPoint)}>{T.alreadyBlurred[lang]}</TextLink>
+        <TextLink onClick={() => onDone(null)}>{T.skip[lang]}</TextLink>
+      </>}>
+        <Bloom size={80} pulse={false} onClick={blurredNow}>{T.blurred[lang]}</Bloom>
+      </Footer>
+      <p className="mt-4 text-xs text-muted">{T.note[lang]}</p>
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Bloom, Eyebrow, Footer, Heading, TextLink, TickRow, TickRows } from './Coral';
 import { useClipPlayer } from '../hooks/useClipPlayer';
 import type { Lang } from '../lib/i18n';
 import { answer, audioPath, buildInterview, isAnswered, isSelected, QUESTIONS, questionCount, UI, type Answers } from '../lib/interview';
@@ -36,57 +37,66 @@ export function InterviewStep({ lang, onDone }: { lang: Lang; onDone: (interview
   const showBack = idx > 0;
 
   return (
-    <div className="card" lang={lang}>
-      {idx === 0 && <p className="mb-4 rounded-2xl bg-sunk p-3 text-sm text-muted">{UI.intro[lang]}</p>}
-      <p className="text-xs font-medium text-subtle">{questionCount(lang, idx + 1)}</p>
-      <h2 className="mt-1 text-xl font-semibold leading-snug">{q.text[lang]}</h2>
-      {clip.canPlay && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {!muted && (
-            <button type="button" className="btn btn-ghost min-h-11 px-4 py-2 text-sm" onClick={clip.replay}>
-              <SpeakerIcon /> {UI.playAgain[lang]}
-            </button>
-          )}
-          <button type="button" aria-pressed={muted} className="btn btn-ghost min-h-11 px-4 py-2 text-sm"
-            onClick={() => setMuted(!muted)}>
-            <SpeakerIcon off={!muted} /> {muted ? UI.soundOn[lang] : UI.soundOff[lang]}
-          </button>
-        </div>
-      )}
-      <div className="mt-4 grid gap-2">
-        {q.options.map((o) => {
-          const on = isSelected(q, answers, o.value);
-          return (
-            <button key={String(o.value)} type="button" aria-pressed={on}
-              className={`btn min-h-14 rounded-2xl px-4 py-3 text-left text-base ${on ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => pick(o.value)}>
-              {o.text[lang]}
-            </button>
-          );
-        })}
+    <div lang={lang}>
+      {idx === 0 && <p className="mb-4 text-sm text-muted">{UI.intro[lang]}</p>}
+      <div className="flex min-h-11 items-center justify-between gap-2">
+        <Eyebrow>{questionCount(lang, idx + 1)}</Eyebrow>
+        {/* Sound controls only when a clip loaded; icon buttons in coral, named by the same words as before. */}
+        {clip.canPlay && (
+          <div className="flex items-center gap-1">
+            {!muted && (
+              <IconButton label={UI.playAgain[lang]} onClick={clip.replay}><ReplayIcon /></IconButton>
+            )}
+            <IconButton label={muted ? UI.soundOn[lang] : UI.soundOff[lang]} pressed={muted} onClick={() => setMuted(!muted)}>
+              <SpeakerIcon off={!muted} />
+            </IconButton>
+          </div>
+        )}
       </div>
+      <Heading className="mt-1 text-[22px] leading-snug">{q.text[lang]}</Heading>
+      <TickRows className="mt-3">
+        {q.options.map((o) => (
+          <TickRow key={String(o.value)} selected={isSelected(q, answers, o.value)} onClick={() => pick(o.value)}>
+            {o.text[lang]}
+          </TickRow>
+        ))}
+      </TickRows>
       {/* No Back on the first question: the language is chosen on the welcome screen now. */}
-      {(showBack || q.kind === 'multi') && (
-        <div className="mt-5 flex gap-3">
-          {showBack && <button type="button" className="btn btn-ghost flex-1" onClick={() => setIdx(idx - 1)}>{UI.back[lang]}</button>}
-          {q.kind === 'multi' && (
-            <button type="button" className="btn btn-primary flex-1" disabled={!isAnswered(q, answers)} onClick={() => next(answers)}>
-              {UI.next[lang]}
-            </button>
-          )}
-        </div>
-      )}
-      <button type="button" className="mt-3 w-full py-3 text-sm text-muted underline" onClick={() => finish(null)}>
-        {UI.skip[lang]}
-      </button>
+      <Footer left={<>
+        {showBack && <TextLink onClick={() => setIdx(idx - 1)}>{UI.back[lang]}</TextLink>}
+        <TextLink onClick={() => finish(null)}>{UI.skip[lang]}</TextLink>
+      </>}>
+        {q.kind === 'multi' && (
+          <Bloom disabled={!isAnswered(q, answers)} onClick={() => next(answers)}>{UI.next[lang]}</Bloom>
+        )}
+      </Footer>
     </div>
+  );
+}
+
+/** A 44 px round coral icon button; the label is its accessible name (and tooltip). */
+function IconButton({ label, pressed, onClick, children }: { label: string; pressed?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" aria-label={label} title={label} aria-pressed={pressed} onClick={onClick}
+      className="al-focus grid h-11 w-11 place-items-center rounded-full text-brand ring-1 ring-brand-pale hover:bg-polyp">
+      {children}
+    </button>
+  );
+}
+
+/** Replay arrow for "Play again" (decorative; the button is named). */
+function ReplayIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12a8 8 0 1 0 2.3-5.6" /><path d="M4 4v4h4" />
+    </svg>
   );
 }
 
 /** Small speaker glyph for the sound buttons (decorative; the button text names the action). */
 function SpeakerIcon({ off = false }: { off?: boolean }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-1 inline-block h-4 w-4 align-[-2px]" fill="none"
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none"
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 9h4l5-4v14l-5-4H4z" />
       {off ? <path d="M17 9l4 6M21 9l-4 6" /> : <path d="M17 8.5a5 5 0 0 1 0 7" />}

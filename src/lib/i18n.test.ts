@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import hindiReview from '../../docs/hindi-review.md?raw';
 import { presetChart } from './acuity';
 import { BLOCKER_TEXT, startBlocker } from './calibration';
 import { CORRECTION_TEXT, testedWithText, USUAL_TEXT, usualWearText } from './correction';
@@ -321,5 +322,22 @@ describe('report and history', () => {
   it('Hindi still presets the Landolt C', () => {
     expect(presetChart('hi')).toBe('C');
     expect(presetChart('en')).toBeNull();
+  });
+});
+
+describe('redesign strings (21 Nov 2026)', () => {
+  it('"Ready?", the step label and the distance target exist in every language, with the same placeholders', () => {
+    for (const l of LANGS) expect(fmt(SCREENS.camera.target[l], { cm: 50 })).toContain('50 cm');
+    expect(SCREENS.welcome.ready).toEqual({ en: 'Ready?', hi: 'तैयार हैं?' });
+    for (const l of LANGS) expect(fmt(SCREENS.progress.step[l], { n: 2, total: 5 })).toMatch(/2.*5/);
+    expect(fmt(SCREENS.progress.step.en, { n: 2, total: 5 })).toBe('Step 2 of 5');
+  });
+  it('are listed in docs/hindi-review.md under their keys', () => {
+    const doc = hindiReview.replace(/\r\n/g, '\n');
+    for (const [key, t] of [
+      ['WELCOME.ready', SCREENS.welcome.ready], ['PROGRESS.step', SCREENS.progress.step],
+      ['CAMERA.target', SCREENS.camera.target], ['RESULTS.yourResult', SCREENS.results.yourResult],
+    ] as const)
+      expect(doc, key).toContain(`| ${key} | ${t.en} | ${t.hi} |`);
   });
 });

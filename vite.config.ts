@@ -21,8 +21,9 @@ export default defineConfig({
       manifest: false,
       workbox: {
         // App shell + the MediaPipe Face Mesh runtime/model copied into public/mediapipe + the recorded interview
-        // clips in public/audio (mp3 only; the folder's .gitkeep files are not matched).
-        globPatterns: ['**/*.{js,css,html,svg,webmanifest,wasm,data,binarypb,tflite}', 'audio/**/*.mp3'],
+        // clips in public/audio (mp3 only; the folder's .gitkeep files are not matched) + the bundled woff2 fonts (the
+        // .woff fallbacks Vite also emits are not precached: every browser with a service worker reads woff2).
+        globPatterns: ['**/*.{js,css,html,svg,webmanifest,wasm,data,binarypb,tflite,woff2}', 'audio/**/*.mp3'],
         // The Face Mesh .wasm files are about 6 MB each (Workbox default limit is 2 MiB); a ~30 s clip at 64 kbps
         // is about 250 KB.
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,

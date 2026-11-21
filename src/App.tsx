@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Bloom, Footer, Note, VesselMotif } from './components/Coral';
 import { FitStep } from './components/Fit';
 import { InterviewStep } from './components/Interview';
 import { Progress } from './components/Progress';
@@ -83,6 +84,14 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = pageLang;
   }, [pageLang]);
+  // Staff screens get a near-white page instead of the coral gradient (index.css body[data-page="staff"]).
+  const staffPage = stage === 'staff' || stage === 'history';
+  useEffect(() => {
+    if (staffPage) document.body.dataset.page = 'staff';
+    else delete document.body.dataset.page;
+  }, [staffPage]);
+  // Test pages (a stimulus or the distance gate on screen) are still: the corner vessels are drawn without flowing dashes.
+  const stillPage = (stage === 'eye' && sub !== 'cover') || stage === 'fit';
 
   const patch = (e: Eye, p: Partial<EyeResult>) =>
     setSession((s) => ({ ...s, results: { ...s.results, [e]: { ...s.results[e], ...p } } }));
@@ -127,13 +136,18 @@ export default function App() {
   };
 
   return (
-    <main className="mx-auto min-h-full max-w-md px-4 pb-10 pt-6">
-      <header className="no-print mb-4 flex items-center justify-between">
-        <span className="text-lg font-semibold">Aero<span className="text-brand">Lens</span></span>
+    // isolate: a stacking context, so the decorative vessels (z-index -10, components/Coral.tsx) paint above the fixed page
+    // background (body::before) and below the content. overflow-x-clip: the bloom's pulse rings never cause a sideways scroll.
+    <main className="relative isolate mx-auto min-h-full max-w-md overflow-x-clip px-4 pb-10 pt-5">
+      {/* No header on welcome: its big title is the logo, and the hero vessels need the top of the screen. */}
+      {stage !== 'welcome' && <header className="no-print mb-4 flex items-center justify-between gap-4">
+        <span className="shrink-0 text-lg font-extrabold tracking-[-0.4px] text-ink">Aero<span className="font-bold italic text-brand">Lens</span></span>
         {stage === 'staff' || stage === 'history'
-          ? <span className="text-[11px] font-medium text-subtle">Staff</span>
-          : <Progress lang={lang} at={stage === 'eye' ? { stage, eyeIdx, sub } : { stage }} />}
-      </header>
+          ? <span className="text-[11px] font-semibold text-muted">Staff</span>
+          : <div className="min-w-0 max-w-[78%] flex-1"><Progress lang={lang} at={stage === 'eye' ? { stage, eyeIdx, sub } : { stage }} /></div>}
+      </header>}
+      {/* Small vessel drawing in the top-right corner of every patient screen except the welcome hero. */}
+      {stage !== 'welcome' && !staffPage && <VesselMotif animated={!stillPage} className="no-print" />}
 
       {stage === 'welcome' && (
         <Welcome lang={lang} onLang={(l) => setSession((s) => ({ ...s, lang: l }))} onStart={start} onRecent={() => setStage('history')} />
@@ -153,9 +167,11 @@ export default function App() {
       )}
 
       {stage === 'eye' && zoomChanged && (
-        <div className="card">
-          <p>{ZOOM.changed[lang]}</p>
-          <button className="btn btn-primary mt-3" onClick={recalibrateScreen}>{ZOOM.recalibrate[lang]}</button>
+        <div>
+          <Note tone="warn" role="alert" className="text-base">{ZOOM.changed[lang]}</Note>
+          <Footer>
+            <Bloom size={72} pulse={false} onClick={recalibrateScreen}>{ZOOM.recalibrate[lang]}</Bloom>
+          </Footer>
         </div>
       )}
       {stage === 'eye' && !zoomChanged && (
